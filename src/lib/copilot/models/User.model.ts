@@ -48,7 +48,7 @@ class User {
       if (err instanceof Error && err.message.includes('Unable to authorize Copilot SDK')) {
         throw new CopilotInvalidTokenError('Unable to authorize Copilot with provided token')
       }
-      console.error('User#authenticate :: Error while initializing Copilot client', err)
+      logger.error('User#authenticate :: Error while initializing Copilot client', err)
       throw new CopilotConnectionError()
     }
 

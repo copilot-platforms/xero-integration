@@ -8,6 +8,7 @@ import {
   xeroConnections,
 } from '@/db/schema/xeroConnections.schema'
 import BaseService from '@/lib/copilot/services/base.service'
+import logger from '@/lib/logger'
 import XeroAPI from '@/lib/xero/XeroAPI'
 
 class XeroConnectionsService extends BaseService {
@@ -51,7 +52,7 @@ class XeroConnectionsService extends BaseService {
       tokenSet = await xero.handleApiCallback(urlParams)
       tenantId = await xero.getActiveTenantId()
     } catch (error) {
-      console.error(
+      logger.error(
         'XeroConnectionsService#handleXeroConnectionCallback :: Error handling Xero callback:',
         error,
       )
