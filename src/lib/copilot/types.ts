@@ -147,3 +147,10 @@ export const NotificationCreatedResponseSchema = z.object({
   senderType: z.string().optional(),
 })
 export type NotificationCreatedResponse = z.infer<typeof NotificationCreatedResponseSchema>
+
+export const CopilotProductSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string(),
+})
+export type CopilotProduct = z.infer<typeof CopilotProductSchema>
