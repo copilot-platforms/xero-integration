@@ -8,6 +8,7 @@ import APIError from '@/errors/APIError'
 import type { ContactCreatePayload, TaxRateCreatePayload } from '@/features/invoice-sync/types'
 import type { CreateInvoicePayload, ValidContact } from '@/lib/xero/types'
 import { getServerUrl } from '@/utils/serverUrl'
+import logger from '../logger'
 
 class XeroAPI {
   private readonly xero: XeroClient
@@ -51,7 +52,7 @@ class XeroAPI {
       const tokenSet = await this.xero.apiCallback(url)
       return tokenSet
     } catch (error) {
-      console.error('XeroAPI#handleApiCallback | Error during API callback:', error)
+      logger.error('XeroAPI#handleApiCallback | Error during API callback:', error)
       throw error
     }
   }

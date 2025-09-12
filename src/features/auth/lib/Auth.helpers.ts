@@ -4,6 +4,7 @@ import z from 'zod'
 import type { XeroConnection } from '@/db/schema/xeroConnections.schema'
 import { copilotBottleneck } from '@/lib/copilot/bottleneck'
 import type User from '@/lib/copilot/models/User.model'
+import logger from '@/lib/logger'
 
 export const sendAuthorizationFailedNotification = async (
   user: User,
@@ -39,7 +40,7 @@ export const sendAuthorizationFailedNotification = async (
   await Promise.all(notificationPromises)
 
   if (e && e instanceof Error) {
-    console.error(
+    logger.error(
       'XeroConection.helpers#sendAuthorizationFailedNotification :: Xero authorization failed:',
       e,
     )

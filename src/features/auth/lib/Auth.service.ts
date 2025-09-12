@@ -25,7 +25,7 @@ class AuthService extends BaseService {
       tokenSet = await xero.handleApiCallback(urlParams)
       tenantId = await xero.getActiveTenantId()
     } catch (error) {
-      console.error(
+      logger.error(
         'XeroConnectionsService#handleXeroConnectionCallback :: Error handling Xero callback:',
         error,
       )
@@ -91,7 +91,7 @@ class AuthService extends BaseService {
           })
         } catch (e: unknown) {
           // If unable to refresh, send notification email
-          logger.info('Error refreshing Xero access token:', e)
+          logger.error('Error refreshing Xero access token:', e)
           await this.handleRefreshFailure(safe, connection)
         }
       }

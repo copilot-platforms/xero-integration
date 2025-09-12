@@ -3,6 +3,7 @@ import { type NextRequest, NextResponse } from 'next/server'
 import z, { ZodError } from 'zod'
 import APIError from '@/errors/APIError'
 import type { StatusableError } from '@/errors/BaseServerError'
+import logger from '@/lib/logger'
 
 type RequestHandler = (req: NextRequest, params: unknown) => Promise<NextResponse>
 
@@ -37,19 +38,19 @@ export const withErrorHandler = (handler: RequestHandler): RequestHandler => {
       if (error instanceof ZodError) {
         status = httpStatus.UNPROCESSABLE_ENTITY
         message = z.prettifyError(error)
-        console.error('ZodError: ', z.prettifyError(error), '\n', error)
+        logger.error('ZodError: ', z.prettifyError(error), '\n', error)
       } else if (error instanceof APIError) {
         status = error.status
         message = error.message || message
         if (status !== httpStatus.OK) {
-          console.error('APIError:', error.error || error.message)
+          logger.error('APIError:', error.error || error.message)
         }
       } else if (error instanceof Error && error.message) {
         message = error.message
-        console.error('Error:', error)
+        logger.error('Error:', error)
       } else {
         message = 'Something went wrong'
-        console.error(error)
+        logger.error(error)
       }
 
       return NextResponse.json({ error: message }, { status })
