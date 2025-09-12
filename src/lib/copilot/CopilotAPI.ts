@@ -2,7 +2,9 @@ import 'server-only'
 
 import type { CopilotAPI as SDK } from 'copilot-node-sdk'
 import { copilotApi } from 'copilot-node-sdk'
+import z from 'zod'
 import env from '@/config/server.env'
+import { MAX_FETCH_COPILOT_RESOURCES } from '@/constants/limits'
 import {
   type ClientRequest,
   type ClientResponse,
@@ -14,6 +16,8 @@ import {
   type CompanyResponse,
   CompanyResponseSchema,
   type CopilotListArgs,
+  type CopilotProduct,
+  CopilotProductSchema,
   type InternalUser,
   InternalUserSchema,
   type InternalUsersResponse,
@@ -59,7 +63,7 @@ export class CopilotAPI {
   }
 
   async _getWorkspace(): Promise<WorkspaceResponse> {
-    logger.info('CopilotAPI#_getWorkspace', this.token)
+    logger.info('CopilotAPI#_getWorkspace')
     return WorkspaceResponseSchema.parse(await this.copilot.retrieveWorkspace())
   }
 
@@ -67,68 +71,76 @@ export class CopilotAPI {
     requestBody: ClientRequest,
     sendInvite: boolean = false,
   ): Promise<ClientResponse> {
-    logger.info('CopilotAPI#_createClient', this.token)
+    logger.info('CopilotAPI#_createClient', requestBody, sendInvite)
     return ClientResponseSchema.parse(await this.copilot.createClient({ sendInvite, requestBody }))
   }
 
   async _getClient(id: string): Promise<ClientResponse> {
-    logger.info('CopilotAPI#_getClient', this.token)
+    logger.info('CopilotAPI#_getClient', id)
     return ClientResponseSchema.parse(await this.copilot.retrieveClient({ id }))
   }
 
   async _getClients(args: CopilotListArgs & { companyId?: string } = {}) {
-    logger.info('CopilotAPI#_getClients', this.token)
+    logger.info('CopilotAPI#_getClients', args)
     return ClientsResponseSchema.parse(await this.copilot.listClients(args))
   }
 
   async _updateClient(id: string, requestBody: ClientRequest): Promise<ClientResponse> {
-    logger.info('CopilotAPI#_updateClient', this.token)
+    logger.info('CopilotAPI#_updateClient', id)
     return ClientResponseSchema.parse(await this.copilot.updateClient({ id, requestBody }))
   }
 
   async _deleteClient(id: string) {
-    logger.info('CopilotAPI#_deleteClient', this.token)
+    logger.info('CopilotAPI#_deleteClient', id)
     return await this.copilot.deleteClient({ id })
   }
 
   async _createCompany(requestBody: CompanyCreateRequest) {
-    logger.info('CopilotAPI#_createCompany', this.token)
+    logger.info('CopilotAPI#_createCompany', requestBody)
     return CompanyResponseSchema.parse(await this.copilot.createCompany({ requestBody }))
   }
 
   async _getCompany(id: string): Promise<CompanyResponse> {
-    logger.info('CopilotAPI#_getCompany', this.token)
+    logger.info('CopilotAPI#_getCompany', id)
     return CompanyResponseSchema.parse(await this.copilot.retrieveCompany({ id }))
   }
 
   async _getCompanies(
     args: CopilotListArgs & { isPlaceholder?: boolean } = {},
   ): Promise<CompaniesResponse> {
-    logger.info('CopilotAPI#_getCompanies', this.token)
+    logger.info('CopilotAPI#_getCompanies', args)
     return CompaniesResponseSchema.parse(await this.copilot.listCompanies(args))
   }
 
   async _getCompanyClients(companyId: string): Promise<ClientResponse[]> {
-    logger.info('CopilotAPI#_getCompanyClients', this.token)
+    logger.info('CopilotAPI#_getCompanyClients', companyId)
     return (await this.getClients({ limit: 10000, companyId })).data || []
   }
 
   async _getInternalUsers(args: CopilotListArgs = {}): Promise<InternalUsersResponse> {
-    logger.info('CopilotAPI#_getInternalUsers', this.token)
+    logger.info('CopilotAPI#_getInternalUsers', args)
     return InternalUsersResponseSchema.parse(await this.copilot.listInternalUsers(args))
   }
 
   async _getInternalUser(id: string): Promise<InternalUser> {
-    logger.info('CopilotAPI#_getInternalUser', this.token)
+    logger.info('CopilotAPI#_getInternalUser', id)
     return InternalUserSchema.parse(await this.copilot.retrieveInternalUser({ id }))
   }
 
   async _createNotification(
     requestBody: NotificationRequestBody,
   ): Promise<NotificationCreatedResponse> {
-    logger.info('CopilotAPI#_createNotification', this.token)
+    logger.info('CopilotAPI#_createNotification', requestBody)
     const notification = await this.copilot.createNotification({ requestBody })
     return NotificationCreatedResponseSchema.parse(notification)
+  }
+
+  async _getProducts(
+    args: CopilotListArgs = { limit: MAX_FETCH_COPILOT_RESOURCES },
+  ): Promise<CopilotProduct[]> {
+    logger.info('CopilotAPI#_getProducts', args)
+    const products = await this.copilot.listProducts(args)
+    return z.array(CopilotProductSchema).parse(products.data)
   }
 
   private wrapWithRetry<Args extends unknown[], R>(
@@ -152,4 +164,5 @@ export class CopilotAPI {
   getInternalUsers = this.wrapWithRetry(this._getInternalUsers)
   getInternalUser = this.wrapWithRetry(this._getInternalUser)
   createNotification = this.wrapWithRetry(this._createNotification)
+  getProducts = this.wrapWithRetry(this._getProducts)
 }
