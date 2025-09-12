@@ -7,6 +7,7 @@ import { clientContactMappings } from '@/db/schema/clientContactMappings.schema'
 import { CopilotAPI } from '@/lib/copilot/CopilotAPI'
 import type { ClientResponse } from '@/lib/copilot/types'
 import { buildClientName } from '@/lib/copilot/utils'
+import logger from '@/lib/logger'
 import AuthenticatedXeroService from '@/lib/xero/AuthenticatedXero.service'
 import type { ValidContact } from '@/lib/xero/types'
 
@@ -44,7 +45,7 @@ class XeroContactService extends AuthenticatedXeroService {
           ),
         )
     }
-    console.info(
+    logger.info(
       `XeroContactService#getSyncedXeroContact :: Couldn't find existing client... creating a new one for ${clientId}`,
     )
     contact = await this.createContact(client)

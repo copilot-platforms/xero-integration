@@ -4,6 +4,7 @@ import CopilotConnectionError from '@/lib/copilot/errors/CopilotConnectionError'
 import CopilotInvalidTokenError from '@/lib/copilot/errors/CopilotInvalidTokenError'
 import CopilotNoTokenError from '@/lib/copilot/errors/CopilotNoTokenError'
 import type { Token } from '@/lib/copilot/types'
+import logger from '@/lib/logger'
 
 class User {
   internalUserId?: string
@@ -36,7 +37,7 @@ class User {
     const tokenParsed = z.string().min(1).safeParse(token)
 
     if (!tokenParsed.success) {
-      console.info('User#authenticate :: Token parse error', tokenParsed.error)
+      logger.info('User#authenticate :: Token parse error', tokenParsed.error)
       throw new CopilotInvalidTokenError()
     }
 

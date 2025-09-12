@@ -4,6 +4,7 @@ import type { TokenSet } from 'xero-node'
 import type { XeroConnection, XeroConnectionWithTokenSet } from '@/db/schema/xeroConnections.schema'
 import type User from '@/lib/copilot/models/User.model'
 import BaseService from '@/lib/copilot/services/base.service'
+import logger from '@/lib/logger'
 import XeroConnectionFailedError from '@/lib/xero/errors/XeroConnectionFailedError'
 import XeroAPI from '@/lib/xero/XeroAPI'
 
@@ -74,7 +75,7 @@ class AuthService extends BaseService {
 
       // If Xero connection was not found or unrefreshable. Send a mail prompting IUs to re-authorize
       if (!connection.tokenSet || !connection.tokenSet.refresh_token) {
-        console.info(
+        logger.info(
           'XeroConnectionsService#authorizeXeroForCopilotWorkspace :: Unable to refresh Xero access token, no refresh token available',
         )
         await this.handleRefreshFailure(safe, connection)
@@ -90,7 +91,7 @@ class AuthService extends BaseService {
           })
         } catch (e: unknown) {
           // If unable to refresh, send notification email
-          console.error('Error refreshing Xero access token:', JSON.stringify(e))
+          logger.info('Error refreshing Xero access token:', e)
           await this.handleRefreshFailure(safe, connection)
         }
       }

@@ -4,16 +4,17 @@ import XeroInvoiceSyncService from '@invoice-sync/lib/XeroInvoiceSync.service'
 import { InvoiceCreatedEventSchema, type WebhookEvent } from '@invoice-sync/types'
 import status from 'http-status'
 import APIError from '@/errors/APIError'
+import logger from '@/lib/logger'
 import AuthenticatedXeroService from '@/lib/xero/AuthenticatedXero.service'
 
 class WebhookService extends AuthenticatedXeroService {
   async handleEvent(data: WebhookEvent) {
-    console.info(
+    logger.info(
       'WebhookService#handleEvent :: Handling webhook for user',
       this.user.portalId,
       this.user.token,
     )
-    console.info('WebhookService#handleEvent :: Received webhook event data', JSON.stringify(data))
+    logger.info('WebhookService#handleEvent :: Received webhook event data', data)
 
     const eventHandlerMap: Record<
       WebhookEvent['eventType'],

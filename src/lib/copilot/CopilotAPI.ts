@@ -27,6 +27,7 @@ import {
   WorkspaceResponseSchema,
 } from '@/lib/copilot/types'
 import { withRetry } from '@/lib/copilot/withRetry'
+import logger from '@/lib/logger'
 
 export class CopilotAPI {
   readonly copilot: SDK
@@ -58,7 +59,7 @@ export class CopilotAPI {
   }
 
   async _getWorkspace(): Promise<WorkspaceResponse> {
-    console.info('CopilotAPI#_getWorkspace', this.token)
+    logger.info('CopilotAPI#_getWorkspace', this.token)
     return WorkspaceResponseSchema.parse(await this.copilot.retrieveWorkspace())
   }
 
@@ -66,66 +67,66 @@ export class CopilotAPI {
     requestBody: ClientRequest,
     sendInvite: boolean = false,
   ): Promise<ClientResponse> {
-    console.info('CopilotAPI#_createClient', this.token)
+    logger.info('CopilotAPI#_createClient', this.token)
     return ClientResponseSchema.parse(await this.copilot.createClient({ sendInvite, requestBody }))
   }
 
   async _getClient(id: string): Promise<ClientResponse> {
-    console.info('CopilotAPI#_getClient', this.token)
+    logger.info('CopilotAPI#_getClient', this.token)
     return ClientResponseSchema.parse(await this.copilot.retrieveClient({ id }))
   }
 
   async _getClients(args: CopilotListArgs & { companyId?: string } = {}) {
-    console.info('CopilotAPI#_getClients', this.token)
+    logger.info('CopilotAPI#_getClients', this.token)
     return ClientsResponseSchema.parse(await this.copilot.listClients(args))
   }
 
   async _updateClient(id: string, requestBody: ClientRequest): Promise<ClientResponse> {
-    console.info('CopilotAPI#_updateClient', this.token)
+    logger.info('CopilotAPI#_updateClient', this.token)
     return ClientResponseSchema.parse(await this.copilot.updateClient({ id, requestBody }))
   }
 
   async _deleteClient(id: string) {
-    console.info('CopilotAPI#_deleteClient', this.token)
+    logger.info('CopilotAPI#_deleteClient', this.token)
     return await this.copilot.deleteClient({ id })
   }
 
   async _createCompany(requestBody: CompanyCreateRequest) {
-    console.info('CopilotAPI#_createCompany', this.token)
+    logger.info('CopilotAPI#_createCompany', this.token)
     return CompanyResponseSchema.parse(await this.copilot.createCompany({ requestBody }))
   }
 
   async _getCompany(id: string): Promise<CompanyResponse> {
-    console.info('CopilotAPI#_getCompany', this.token)
+    logger.info('CopilotAPI#_getCompany', this.token)
     return CompanyResponseSchema.parse(await this.copilot.retrieveCompany({ id }))
   }
 
   async _getCompanies(
     args: CopilotListArgs & { isPlaceholder?: boolean } = {},
   ): Promise<CompaniesResponse> {
-    console.info('CopilotAPI#_getCompanies', this.token)
+    logger.info('CopilotAPI#_getCompanies', this.token)
     return CompaniesResponseSchema.parse(await this.copilot.listCompanies(args))
   }
 
   async _getCompanyClients(companyId: string): Promise<ClientResponse[]> {
-    console.info('CopilotAPI#_getCompanyClients', this.token)
+    logger.info('CopilotAPI#_getCompanyClients', this.token)
     return (await this.getClients({ limit: 10000, companyId })).data || []
   }
 
   async _getInternalUsers(args: CopilotListArgs = {}): Promise<InternalUsersResponse> {
-    console.info('CopilotAPI#_getInternalUsers', this.token)
+    logger.info('CopilotAPI#_getInternalUsers', this.token)
     return InternalUsersResponseSchema.parse(await this.copilot.listInternalUsers(args))
   }
 
   async _getInternalUser(id: string): Promise<InternalUser> {
-    console.info('CopilotAPI#_getInternalUser', this.token)
+    logger.info('CopilotAPI#_getInternalUser', this.token)
     return InternalUserSchema.parse(await this.copilot.retrieveInternalUser({ id }))
   }
 
   async _createNotification(
     requestBody: NotificationRequestBody,
   ): Promise<NotificationCreatedResponse> {
-    console.info('CopilotAPI#_createNotification', this.token)
+    logger.info('CopilotAPI#_createNotification', this.token)
     const notification = await this.copilot.createNotification({ requestBody })
     return NotificationCreatedResponseSchema.parse(notification)
   }
