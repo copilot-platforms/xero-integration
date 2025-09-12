@@ -10,6 +10,7 @@ import { Invoice } from 'xero-node'
 import db from '@/db'
 import { type SyncedInvoiceCreatePayload, syncedInvoices } from '@/db/schema/syncedInvoices.schema'
 import APIError from '@/errors/APIError'
+import CopilotProductsService from '@/lib/copilot/services/CopilotProducts.service'
 import logger from '@/lib/logger'
 import AuthenticatedXeroService from '@/lib/xero/AuthenticatedXero.service'
 import {
@@ -24,15 +25,30 @@ class XeroInvoiceSyncService extends AuthenticatedXeroService {
     xeroInvoiceId: string | null
     status: SyncedInvoiceCreatePayload['status']
   }> {
-    // Prepare invoid payload fields
     const xeroTaxService = new XeroTaxService(this.user, this.connection)
-    const taxRate = data.taxAmount
-      ? await xeroTaxService.getTaxRateForItem(data.taxPercentage)
+    const taxRatePromise = data.taxAmount
+      ? xeroTaxService.getTaxRateForItem(data.taxPercentage)
       : undefined
 
-    const lineItems = serializeLineItems(data.lineItems, taxRate)
     const xeroContactService = new XeroContactService(this.user, this.connection)
-    const { contactID } = await xeroContactService.getSyncedContact(data.clientId)
+    const contactPromise = xeroContactService.getSyncedContact(data.clientId)
+
+    const copilotProductsService = new CopilotProductsService(this.user)
+    const lineProductIds = data.lineItems.map((item) => item.productId ?? '')
+    const productsPromise = copilotProductsService.getCopilotProducts(lineProductIds)
+    const pricesPromise = copilotProductsService.getCopilotPrices(lineProductIds)
+
+    const [taxRate, { contactID }, productIds, priceIds] = await Promise.all([
+      taxRatePromise,
+      contactPromise,
+      productsPromise,
+      pricesPromise,
+    ])
+
+    logger.log('productIds', productIds)
+    logger.log('priceIds', priceIds)
+
+    const lineItems = serializeLineItems(data.lineItems, taxRate)
 
     // Prepare invoice creation payload
     const invoice = CreateInvoicePayloadSchema.parse({
