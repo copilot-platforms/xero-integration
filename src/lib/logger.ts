@@ -18,7 +18,7 @@ function formatArg(arg: unknown): string {
   return typeof arg === 'string' ? arg : util.inspect(arg, inspectOptions)
 }
 
-function makeLogger(level: LogLevel): (...args: unknown[]) => void {
+function loggerFactory(level: LogLevel): (...args: unknown[]) => void {
   return (...args: unknown[]) => {
     const line = args.map(formatArg).join(' ')
     // biome-ignore lint/suspicious/noConsole: only 'log' level will be warned
@@ -27,10 +27,10 @@ function makeLogger(level: LogLevel): (...args: unknown[]) => void {
 }
 
 export const logger: Logger = {
-  log: makeLogger('log'),
-  info: makeLogger('info'),
-  warn: makeLogger('warn'),
-  error: makeLogger('error'),
+  log: loggerFactory('log'),
+  info: loggerFactory('info'),
+  warn: loggerFactory('warn'),
+  error: loggerFactory('error'),
 }
 
 export default logger
