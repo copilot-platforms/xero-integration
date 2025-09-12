@@ -1,5 +1,6 @@
 import { type TaxRateCreatePayload, TaxRateCreatePayloadSchema } from '@invoice-sync/types'
 import { type TaxComponent, TaxRate } from 'xero-node'
+import logger from '@/lib/logger'
 import AuthenticatedXeroService from '@/lib/xero/AuthenticatedXero.service'
 import { areNumbersEqual } from '@/utils/number'
 
@@ -9,7 +10,7 @@ class XeroTaxService extends AuthenticatedXeroService {
     let matchingTaxRate = taxRates?.find((t) => areNumbersEqual(t.effectiveRate, effectiveRate))
 
     if (!matchingTaxRate) {
-      console.info('XeroTaxService#getTaxRateForItem :: Tax Rate not found... creating a new one')
+      logger.info('XeroTaxService#getTaxRateForItem :: Tax Rate not found... creating a new one')
       const payload = {
         name: `Copilot Sales Tax - ${effectiveRate}%`,
         taxComponents: [

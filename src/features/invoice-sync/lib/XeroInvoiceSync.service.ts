@@ -10,6 +10,7 @@ import { Invoice } from 'xero-node'
 import db from '@/db'
 import { type SyncedInvoiceCreatePayload, syncedInvoices } from '@/db/schema/syncedInvoices.schema'
 import APIError from '@/errors/APIError'
+import logger from '@/lib/logger'
 import AuthenticatedXeroService from '@/lib/xero/AuthenticatedXero.service'
 import {
   CreateInvoicePayloadSchema,
@@ -47,15 +48,16 @@ class XeroInvoiceSyncService extends AuthenticatedXeroService {
     // Add a "pending" invoice to db
     let syncedInvoiceRecord = await this.getOrCreateInvoiceRecord(data)
     if (syncedInvoiceRecord.status === 'success') {
-      console.info(
+      logger.info(
         `XeroInvoiceSyncService#syncInvoiceToXero :: Ignoring ${syncedInvoiceRecord.status} sync`,
       )
       return syncedInvoiceRecord
     }
 
+    let syncedInvoice: Invoice | undefined
     // Create and save invoice status
     try {
-      const syncedInvoice = await this.xero.createInvoice(this.connection.tenantId, invoice)
+      syncedInvoice = await this.xero.createInvoice(this.connection.tenantId, invoice)
       syncedInvoiceRecord = await this.updateInvoiceRecord(
         data,
         syncedInvoice,
@@ -66,8 +68,8 @@ class XeroInvoiceSyncService extends AuthenticatedXeroService {
       throw new APIError('Failed to store synced invoice record', status.INTERNAL_SERVER_ERROR, e)
     }
 
-    console.info(
-      `XeroInvoiceSyncService#syncInvoiceToXero :: Synced Copilot invoice ${syncedInvoiceRecord.copilotInvoiceId} to Xero invoice ${syncedInvoiceRecord.xeroInvoiceId} for portalId ${this.connection.portalId}`,
+    logger.info(
+      `XeroInvoiceSyncService#syncInvoiceToXero :: Synced Copilot invoice ${syncedInvoiceRecord.copilotInvoiceId} (${syncedInvoice?.invoiceNumber}) to Xero invoice ${syncedInvoiceRecord.xeroInvoiceId} for portalId ${this.connection.portalId}`,
     )
     return syncedInvoiceRecord
   }
