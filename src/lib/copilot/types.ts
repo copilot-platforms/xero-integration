@@ -154,3 +154,11 @@ export const CopilotProductSchema = z.object({
   description: z.string(),
 })
 export type CopilotProduct = z.infer<typeof CopilotProductSchema>
+
+export const CopilotPriceSchema = z.object({
+  id: z.string(),
+  amount: z.number().nonnegative(),
+  currency: z.string(),
+  productId: z.string(),
+})
+export type CopilotPrice = z.infer<typeof CopilotPriceSchema>
