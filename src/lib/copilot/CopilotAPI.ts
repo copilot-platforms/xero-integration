@@ -16,6 +16,8 @@ import {
   type CompanyResponse,
   CompanyResponseSchema,
   type CopilotListArgs,
+  type CopilotPrice,
+  CopilotPriceSchema,
   type CopilotProduct,
   CopilotProductSchema,
   type InternalUser,
@@ -143,6 +145,14 @@ export class CopilotAPI {
     return z.array(CopilotProductSchema).parse(products.data)
   }
 
+  async _getPrices(
+    args: CopilotListArgs = { limit: MAX_FETCH_COPILOT_RESOURCES },
+  ): Promise<CopilotPrice[]> {
+    logger.info('CopilotAPI#_getProducts', args)
+    const prices = await this.copilot.listPrices({ limit: '10_000' })
+    return z.array(CopilotPriceSchema).parse(prices.data)
+  }
+
   private wrapWithRetry<Args extends unknown[], R>(
     fn: (...args: Args) => Promise<R>,
   ): (...args: Args) => Promise<R> {
@@ -165,4 +175,5 @@ export class CopilotAPI {
   getInternalUser = this.wrapWithRetry(this._getInternalUser)
   createNotification = this.wrapWithRetry(this._createNotification)
   getProducts = this.wrapWithRetry(this._getProducts)
+  getPrices = this.wrapWithRetry(this._getPrices)
 }
