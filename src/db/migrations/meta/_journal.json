@@ -36,6 +36,13 @@
       "when": 1757671313557,
       "tag": "20250912100153_add_synced_invoices_table",
       "breakpoints": false
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1758014764012,
+      "tag": "20250916092604_add_synced_items_table",
+      "breakpoints": false
     }
   ]
 }
