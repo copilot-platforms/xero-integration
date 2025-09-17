@@ -3,7 +3,6 @@ import WebhookService from '@invoice-sync/lib/webhook.service'
 import { WebhookEventSchema } from '@invoice-sync/types'
 import { type NextRequest, NextResponse } from 'next/server'
 import User from '@/lib/copilot/models/User.model'
-import logger from '@/lib/logger'
 
 export const handleCopilotWebhook = async (req: NextRequest) => {
   const token = req.nextUrl.searchParams.get('token')
@@ -15,7 +14,6 @@ export const handleCopilotWebhook = async (req: NextRequest) => {
   const reqBody = await req.json()
   const webhookData = WebhookEventSchema.safeParse(reqBody)
   if (!webhookData.success) {
-    logger.info('Ignoring webhook for ', webhookData.data)
     return NextResponse.json({ message: 'Ignored webhook call for event' })
   }
 
