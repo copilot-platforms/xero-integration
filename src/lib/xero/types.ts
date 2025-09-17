@@ -20,8 +20,9 @@ export const LineItemSchema = z.object({
   unitAmount: z.number().positive(),
   taxAmount: z.number().nonnegative(),
   taxType: z.string().optional(),
+  lineItemID: z.uuid().optional(),
+  itemCode: z.string().optional(),
   // Unique code to identify Xero item
-  // Ref:
   accountCode: z.enum(AccountCode),
 })
 export type LineItem = z.infer<typeof LineItemSchema>

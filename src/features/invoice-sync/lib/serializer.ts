@@ -8,22 +8,30 @@ import type { TaxRate, LineItem as XeroLineItem } from 'xero-node'
 import type { ClientResponse } from '@/lib/copilot/types'
 import { AccountCode } from '@/lib/xero/constants'
 import { type LineItem, LineItemSchema } from '@/lib/xero/types'
+import type XeroInvoiceSyncService from './XeroInvoiceSync.service'
 
 export const serializeLineItems = (
   copilotItems: InvoiceCreatedEvent['lineItems'],
+  products: Awaited<ReturnType<XeroInvoiceSyncService['getProductsWithPrice']>>,
   taxRate?: TaxRate,
 ): LineItem[] => {
   const xeroLineItems: LineItem[] = []
   for (const item of copilotItems) {
-    const serializedItem = LineItemSchema.parse({
+    const lineItemID = item.priceId && products[item.priceId]
+    const payload = {
+      // NOTE: Both lineItemID and itemCode need to be provided for an invoice item to map to an item in Xero
+      // Ref: https://developer.xero.com/documentation/api/accounting/invoices#post-invoices
+      // See section on LineItems elements
+      lineItemID,
+      itemCode: lineItemID && item.priceId,
       description: item.description,
-      quantity: item.quantity,
       unitAmount: item.amount / 100,
+      quantity: item.quantity,
       taxAmount: calculateTaxAmount(item.amount, item.quantity, taxRate?.effectiveRate),
       taxType: taxRate?.taxType,
       accountCode: AccountCode.SALES,
-    } satisfies XeroLineItem)
-    xeroLineItems.push(serializedItem)
+    } satisfies XeroLineItem
+    xeroLineItems.push(LineItemSchema.parse(payload))
   }
 
   return xeroLineItems
