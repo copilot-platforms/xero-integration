@@ -16,12 +16,14 @@
     "ex": "tsx --tsconfig tsconfig.tsx.json --require dotenv/config --require tsconfig-paths/register"
   },
   "dependencies": {
+    "@types/html-to-text": "^9.0.4",
     "bottleneck": "^2.19.5",
     "copilot-design-system": "^2.2.3",
     "copilot-node-sdk": "^3.16.0",
     "dotenv": "^17.2.1",
     "drizzle-orm": "^0.44.5",
     "drizzle-zod": "^0.8.3",
+    "html-to-text": "^9.0.5",
     "http-status": "^2.1.0",
     "next": "15.5.0",
     "p-retry": "^7.0.0",
