@@ -2,13 +2,6 @@ import BaseService from '@/lib/copilot/services/base.service'
 import type { CopilotPrice, CopilotProduct } from '@/lib/copilot/types'
 
 /**
- * const data = { id, name, value }[]
- * const dataMap = { [id]: data }
- * data.find(d => d.id === myId)
- * da
- */
-
-/**
  * Service class to interact with Copilot Products + Prices
  */
 class CopilotProductsService extends BaseService {
