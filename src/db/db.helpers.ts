@@ -12,20 +12,19 @@ export const timestamps = {
 type TableColumns<TTable extends AnyPgTable> = TTable['_']['columns']
 
 /**
- * Build a typed select map for a Postgres table.
- * - `keys` must be real column names from the given table.
- * - Return type is the exact `{ colName: Column }` map Drizzle expects.
+ * Build strongly typed select field object from table and column names
+ * The return type is the exact `{ colName: Column }` map Drizzle expects for select, return, etc
  */
 export const getSelectFields = <
   TTable extends AnyPgTable,
-  K extends readonly (keyof TableColumns<TTable> & string)[],
+  K extends readonly (keyof TableColumns<TTable>)[],
 >(
   table: TTable,
   keys: K,
-): { [P in K[number]]: TableColumns<TTable>[P] } => {
-  // Drizzle stores columns on the internal `_` symbol; safe to read at runtime.
+): { [C in K[number]]: TableColumns<TTable>[C] } => {
+  // Drizzle stores columns on internal `_` symbol
   const cols = table._?.columns as Record<string, AnyPgColumn>
   const out: Record<string, AnyPgColumn> = {}
   for (const k of keys as readonly string[]) out[k] = cols[k]
-  return out as { [P in K[number]]: TableColumns<TTable>[P] }
+  return out as { [C in K[number]]: TableColumns<TTable>[C] }
 }
