@@ -4,11 +4,13 @@ import { serializeLineItems } from '@invoice-sync/lib/serializer'
 import XeroContactService from '@invoice-sync/lib/XeroContact.service'
 import XeroTaxService from '@invoice-sync/lib/XeroTax.service'
 import type { InvoiceCreatedEvent } from '@invoice-sync/types'
-import { and, eq } from 'drizzle-orm'
+import { and, eq, inArray } from 'drizzle-orm'
 import status from 'http-status'
-import { Invoice } from 'xero-node'
+import { Invoice, type Item } from 'xero-node'
+import z from 'zod'
 import db from '@/db'
 import { type SyncedInvoiceCreatePayload, syncedInvoices } from '@/db/schema/syncedInvoices.schema'
+import { syncedItems } from '@/db/schema/syncedItems.schema'
 import APIError from '@/errors/APIError'
 import CopilotProductsService from '@/lib/copilot/services/CopilotProducts.service'
 import logger from '@/lib/logger'
@@ -18,37 +20,126 @@ import {
   type CreateInvoicePayload as InvoiceCreatePayload,
 } from '@/lib/xero/types'
 import { datetimeToDate } from '@/utils/date'
+import { htmlToText } from '@/utils/html'
 
 class XeroInvoiceSyncService extends AuthenticatedXeroService {
+  private async getTaxRate(data: InvoiceCreatedEvent) {
+    const xeroTaxService = new XeroTaxService(this.user, this.connection)
+    return data.taxAmount ? await xeroTaxService.getTaxRateForItem(data.taxPercentage) : undefined
+  }
+
+  private async getContact(data: InvoiceCreatedEvent) {
+    const xeroContactService = new XeroContactService(this.user, this.connection)
+    return await xeroContactService.getSyncedContact(data.clientId)
+  }
+
+  async getProductsWithPrice(data: InvoiceCreatedEvent) {
+    const copilotProductsService = new CopilotProductsService(this.user)
+
+    // Get existing products & prices
+    const lineProductIds = [],
+      linePriceIds = []
+    for (const item of data.lineItems) {
+      item.productId && lineProductIds.push(item.productId)
+      item.priceId && linePriceIds.push(item.priceId)
+    }
+    const products = await copilotProductsService.getCopilotProducts(lineProductIds)
+    const prices = await copilotProductsService.getCopilotPrices(linePriceIds)
+
+    // Get all synced items from db
+    const syncedXeroItems = await db
+      // .select(getSelectFields(syncedItems, ['productId', 'priceId', 'itemId']))
+      .select({
+        productId: syncedItems.productId,
+        priceId: syncedItems.priceId,
+        itemId: syncedItems.itemId,
+      })
+      .from(syncedItems)
+      .where(
+        and(
+          eq(syncedItems.portalId, this.user.portalId),
+          inArray(syncedItems.priceId, Object.keys(prices)),
+        ),
+      )
+
+    // Object with key as priceId (guarenteed to be unique), and value as xero item
+    const syncedXeroItemsMap: Record<string, string> = {}
+
+    const itemsToCreate: Item[] = []
+    for (const item of data.lineItems) {
+      // CASE I: If product is a one-off item (without productId or priceId, skip it)
+      if (!item.productId || !item.priceId) continue
+
+      const copilotProduct = products[item.productId]
+      const copilotPrice = prices[item.priceId]
+      logger.info(
+        'XeroInvoiceSyncService#getProductsWithPrice :: Found product and price for lineItem',
+        item.description,
+        {
+          copilotProduct,
+          copilotPrice,
+        },
+      )
+
+      // CASE II: For line item with productId & priceId, if synced product exists use it
+      const syncedRecord = syncedXeroItems.find(
+        (i) => i.productId === item.productId && i.priceId === item.priceId,
+      )
+      if (syncedRecord) {
+        syncedXeroItemsMap[copilotPrice.id] = syncedRecord.itemId
+      } else {
+        // CASE III: If synced product doesn't exist, schedule to create it
+        itemsToCreate.push({
+          code: item.priceId, // Use priceID as item code since it is the only guarenteed unique identifier here
+          name: copilotProduct.name,
+          description: htmlToText(copilotProduct.description),
+          salesDetails: {
+            unitPrice: copilotPrice.amount,
+          },
+        })
+      }
+    }
+
+    logger.info(
+      'XeroInvoiceService#getProductsWithPrice :: Did not find synced items. Creating new items and syncing them...',
+      itemsToCreate,
+    )
+
+    if (itemsToCreate.length) {
+      const newlyCreatedItems = await this.xero.createItems(this.connection.tenantId, itemsToCreate)
+      await db.insert(syncedItems).values(
+        newlyCreatedItems.map((item) => ({
+          portalId: this.user.portalId,
+          productId: prices[item.code].productId,
+          priceId: item.code,
+          itemId: z.uuid().parse(item.itemID),
+          tenantId: this.connection.tenantId,
+        })),
+      )
+      for (const item of newlyCreatedItems) {
+        syncedXeroItemsMap[item.code] = z.string().parse(item.itemID)
+      }
+    }
+
+    return syncedXeroItemsMap
+  }
+
   async syncInvoiceToXero(data: InvoiceCreatedEvent): Promise<{
     copilotInvoiceId: string
     xeroInvoiceId: string | null
     status: SyncedInvoiceCreatePayload['status']
   }> {
-    const xeroTaxService = new XeroTaxService(this.user, this.connection)
-    const taxRatePromise = data.taxAmount
-      ? xeroTaxService.getTaxRateForItem(data.taxPercentage)
-      : undefined
+    const taxRatePromise = this.getTaxRate(data)
+    const contactPromise = this.getContact(data)
+    const productsWithPricePromise = this.getProductsWithPrice(data)
 
-    const xeroContactService = new XeroContactService(this.user, this.connection)
-    const contactPromise = xeroContactService.getSyncedContact(data.clientId)
-
-    const copilotProductsService = new CopilotProductsService(this.user)
-    const lineProductIds = data.lineItems.map((item) => item.productId ?? '')
-    const productsPromise = copilotProductsService.getCopilotProducts(lineProductIds)
-    const pricesPromise = copilotProductsService.getCopilotPrices(lineProductIds)
-
-    const [taxRate, { contactID }, productIds, priceIds] = await Promise.all([
+    const [taxRate, { contactID }, productsWithPrice] = await Promise.all([
       taxRatePromise,
       contactPromise,
-      productsPromise,
-      pricesPromise,
+      productsWithPricePromise,
     ])
 
-    logger.log('productIds', productIds)
-    logger.log('priceIds', priceIds)
-
-    const lineItems = serializeLineItems(data.lineItems, taxRate)
+    const lineItems = serializeLineItems(data.lineItems, productsWithPrice, taxRate)
 
     // Prepare invoice creation payload
     const invoice = CreateInvoicePayloadSchema.parse({
@@ -95,13 +186,19 @@ class XeroInvoiceSyncService extends AuthenticatedXeroService {
     syncedInvoice?: Invoice,
     status?: SyncedInvoiceCreatePayload['status'], // allow db to default to 'pending'
   ) {
-    const returning = {
+    // const selectFields = getSelectFields(syncedInvoices, [
+    //   'copilotInvoiceId',
+    //   'xeroInvoiceId',
+    //   'status',
+    // ])
+    const selectFields = {
       copilotInvoiceId: syncedInvoices.copilotInvoiceId,
       xeroInvoiceId: syncedInvoices.xeroInvoiceId,
       status: syncedInvoices.status,
-    }
+    } as const
+
     const prevInvoices = await db
-      .select(returning)
+      .select(selectFields)
       .from(syncedInvoices)
       .where(
         and(
@@ -120,7 +217,7 @@ class XeroInvoiceSyncService extends AuthenticatedXeroService {
         xeroInvoiceId: syncedInvoice?.invoiceID,
         status,
       })
-      .returning(returning)
+      .returning(selectFields)
     return invoice
   }
 
