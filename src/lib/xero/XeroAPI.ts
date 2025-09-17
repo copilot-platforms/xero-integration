@@ -1,14 +1,14 @@
 import 'server-only'
 
 import status from 'http-status'
-import { type Invoice, type TaxRate, type TokenSet, XeroClient } from 'xero-node'
+import { type Invoice, type Item, type TaxRate, type TokenSet, XeroClient } from 'xero-node'
 import z from 'zod'
 import env from '@/config/server.env'
 import APIError from '@/errors/APIError'
 import type { ContactCreatePayload, TaxRateCreatePayload } from '@/features/invoice-sync/types'
+import logger from '@/lib/logger'
 import type { CreateInvoicePayload, ValidContact } from '@/lib/xero/types'
 import { getServerUrl } from '@/utils/serverUrl'
-import logger from '../logger'
 
 class XeroAPI {
   private readonly xero: XeroClient
@@ -130,6 +130,13 @@ class XeroAPI {
 
     if (!newTaxRate) throw new APIError('Unable to create taxRate', status.INTERNAL_SERVER_ERROR)
     return newTaxRate
+  }
+
+  async createItems(tenantId: string, items: Item[]): Promise<Item[]> {
+    if (!items.length) return []
+
+    const { body } = await this.xero.accountingApi.createItems(tenantId, { items })
+    return body.items || []
   }
 }
 
