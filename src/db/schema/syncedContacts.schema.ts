@@ -1,8 +1,8 @@
 import { pgTable, uniqueIndex, uuid, varchar } from 'drizzle-orm/pg-core'
 import { timestamps } from '@/db/db.helpers'
 
-export const clientContactMappings = pgTable(
-  'client_contact_mappings',
+export const syncedContacts = pgTable(
+  'synced_contacts',
   {
     id: uuid().primaryKey().notNull().defaultRandom(),
 
@@ -21,7 +21,7 @@ export const clientContactMappings = pgTable(
     ...timestamps,
   },
   (t) => [
-    // Each portal client must have ONLY ONE mapping
-    uniqueIndex('uq_client_contact_mappings_portal_id_client_id').on(t.portalId, t.clientId),
+    // Each client within a portal must have ONLY ONE mapping to a contact
+    uniqueIndex('uq_synced_contacts_portal_id_client_id').on(t.portalId, t.clientId),
   ],
 )

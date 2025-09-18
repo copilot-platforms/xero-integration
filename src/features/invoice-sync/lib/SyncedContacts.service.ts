@@ -5,7 +5,7 @@ import { and, eq } from 'drizzle-orm'
 import type { Contact } from 'xero-node'
 import z from 'zod'
 import db from '@/db'
-import { clientContactMappings } from '@/db/schema/clientContactMappings.schema'
+import { syncedContacts } from '@/db/schema/syncedContacts.schema'
 import { CopilotAPI } from '@/lib/copilot/CopilotAPI'
 import type { ClientResponse } from '@/lib/copilot/types'
 import { buildClientName } from '@/lib/copilot/utils'
@@ -18,17 +18,14 @@ class SyncedContactsService extends AuthenticatedXeroService {
     const copilot = new CopilotAPI(this.user.token)
     const client = await copilot.getClient(clientId)
 
-    const syncedContacts = await db
-      .select({ contactID: clientContactMappings.contactId })
-      .from(clientContactMappings)
+    const syncedContactRecords = await db
+      .select({ contactID: syncedContacts.contactId })
+      .from(syncedContacts)
       .where(
-        and(
-          eq(clientContactMappings.portalId, this.user.portalId),
-          eq(clientContactMappings.clientId, clientId),
-        ),
+        and(eq(syncedContacts.portalId, this.user.portalId), eq(syncedContacts.clientId, clientId)),
       )
 
-    let contact = syncedContacts[0]
+    let contact = syncedContactRecords[0]
 
     // If contact exists, return it and end method. Else, delete existing contact sync to create a new one.
     if (contact) {
@@ -39,11 +36,11 @@ class SyncedContactsService extends AuthenticatedXeroService {
       }
 
       await db
-        .delete(clientContactMappings)
+        .delete(syncedContacts)
         .where(
           and(
-            eq(clientContactMappings.portalId, this.user.portalId),
-            eq(clientContactMappings.clientId, clientId),
+            eq(syncedContacts.portalId, this.user.portalId),
+            eq(syncedContacts.clientId, clientId),
           ),
         )
     }
@@ -57,7 +54,7 @@ class SyncedContactsService extends AuthenticatedXeroService {
   async createContact(client: ClientResponse): Promise<Contact & { contactID: string }> {
     const contactPayload = serializeContact(client)
     const contact = await this.xero.createContact(this.connection.tenantId, contactPayload)
-    await db.insert(clientContactMappings).values({
+    await db.insert(syncedContacts).values({
       portalId: this.user.portalId,
       clientId: client.id,
       contactId: z.string().parse(contact.contactID),
