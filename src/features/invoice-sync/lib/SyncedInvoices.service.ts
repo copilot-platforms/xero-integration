@@ -1,8 +1,8 @@
 import 'server-only'
 
-import { serializeLineItems } from '@invoice-sync/lib/serializer'
-import XeroContactService from '@invoice-sync/lib/XeroContact.service'
-import XeroTaxService from '@invoice-sync/lib/XeroTax.service'
+import XeroContactService from '@invoice-sync/lib/SyncedContacts.service'
+import XeroTaxService from '@invoice-sync/lib/SyncedTax.service'
+import { serializeLineItems } from '@invoice-sync/lib/serializers'
 import type { InvoiceCreatedEvent } from '@invoice-sync/types'
 import { and, eq, inArray } from 'drizzle-orm'
 import status from 'http-status'
@@ -23,6 +23,63 @@ import { datetimeToDate } from '@/utils/date'
 import { htmlToText } from '@/utils/html'
 
 class XeroInvoiceSyncService extends AuthenticatedXeroService {
+  async syncInvoiceToXero(data: InvoiceCreatedEvent): Promise<{
+    copilotInvoiceId: string
+    xeroInvoiceId: string | null
+    status: SyncedInvoiceCreatePayload['status']
+  }> {
+    const taxRatePromise = this.getTaxRate(data)
+    const contactPromise = this.getContact(data)
+    const productsWithPricePromise = this.getProductsWithPrice(data)
+
+    const [taxRate, { contactID }, productsWithPrice] = await Promise.all([
+      taxRatePromise,
+      contactPromise,
+      productsWithPricePromise,
+    ])
+
+    const lineItems = serializeLineItems(data.lineItems, productsWithPrice, taxRate)
+
+    // Prepare invoice creation payload
+    const invoice = CreateInvoicePayloadSchema.parse({
+      type: Invoice.TypeEnum.ACCREC,
+      invoiceNumber: data.number,
+      contact: { contactID },
+      dueDate: datetimeToDate(data.dueDate),
+      lineItems,
+      status: Invoice.StatusEnum.AUTHORISED,
+      date: datetimeToDate(data.sentDate),
+    } satisfies InvoiceCreatePayload)
+
+    // Add a "pending" invoice to db
+    let syncedInvoiceRecord = await this.getOrCreateInvoiceRecord(data)
+    if (syncedInvoiceRecord.status === 'success') {
+      logger.info(
+        `XeroInvoiceSyncService#syncInvoiceToXero :: Ignoring ${syncedInvoiceRecord.status} sync`,
+      )
+      return syncedInvoiceRecord
+    }
+
+    let syncedInvoice: Invoice | undefined
+    // Create and save invoice status
+    try {
+      syncedInvoice = await this.xero.createInvoice(this.connection.tenantId, invoice)
+      syncedInvoiceRecord = await this.updateInvoiceRecord(
+        data,
+        syncedInvoice,
+        syncedInvoice ? 'success' : 'failed',
+      )
+    } catch (e: unknown) {
+      syncedInvoiceRecord = await this.updateInvoiceRecord(data, undefined, 'failed')
+      throw new APIError('Failed to store synced invoice record', status.INTERNAL_SERVER_ERROR, e)
+    }
+
+    logger.info(
+      `XeroInvoiceSyncService#syncInvoiceToXero :: Synced Copilot invoice ${syncedInvoiceRecord.copilotInvoiceId} (${syncedInvoice?.invoiceNumber}) to Xero invoice ${syncedInvoiceRecord.xeroInvoiceId} for portalId ${this.connection.portalId}`,
+    )
+    return syncedInvoiceRecord
+  }
+
   private async getTaxRate(data: InvoiceCreatedEvent) {
     const xeroTaxService = new XeroTaxService(this.user, this.connection)
     return data.taxAmount ? await xeroTaxService.getTaxRateForItem(data.taxPercentage) : undefined
@@ -33,7 +90,7 @@ class XeroInvoiceSyncService extends AuthenticatedXeroService {
     return await xeroContactService.getSyncedContact(data.clientId)
   }
 
-  async getProductsWithPrice(data: InvoiceCreatedEvent) {
+  private async getProductsWithPrice(data: InvoiceCreatedEvent) {
     const copilotProductsService = new CopilotProductsService(this.user)
 
     // Get existing products & prices
@@ -122,63 +179,6 @@ class XeroInvoiceSyncService extends AuthenticatedXeroService {
     }
 
     return syncedXeroItemsMap
-  }
-
-  async syncInvoiceToXero(data: InvoiceCreatedEvent): Promise<{
-    copilotInvoiceId: string
-    xeroInvoiceId: string | null
-    status: SyncedInvoiceCreatePayload['status']
-  }> {
-    const taxRatePromise = this.getTaxRate(data)
-    const contactPromise = this.getContact(data)
-    const productsWithPricePromise = this.getProductsWithPrice(data)
-
-    const [taxRate, { contactID }, productsWithPrice] = await Promise.all([
-      taxRatePromise,
-      contactPromise,
-      productsWithPricePromise,
-    ])
-
-    const lineItems = serializeLineItems(data.lineItems, productsWithPrice, taxRate)
-
-    // Prepare invoice creation payload
-    const invoice = CreateInvoicePayloadSchema.parse({
-      type: Invoice.TypeEnum.ACCREC,
-      invoiceNumber: data.number,
-      contact: { contactID },
-      dueDate: datetimeToDate(data.dueDate),
-      lineItems,
-      status: Invoice.StatusEnum.AUTHORISED,
-      date: datetimeToDate(data.sentDate),
-    } satisfies InvoiceCreatePayload)
-
-    // Add a "pending" invoice to db
-    let syncedInvoiceRecord = await this.getOrCreateInvoiceRecord(data)
-    if (syncedInvoiceRecord.status === 'success') {
-      logger.info(
-        `XeroInvoiceSyncService#syncInvoiceToXero :: Ignoring ${syncedInvoiceRecord.status} sync`,
-      )
-      return syncedInvoiceRecord
-    }
-
-    let syncedInvoice: Invoice | undefined
-    // Create and save invoice status
-    try {
-      syncedInvoice = await this.xero.createInvoice(this.connection.tenantId, invoice)
-      syncedInvoiceRecord = await this.updateInvoiceRecord(
-        data,
-        syncedInvoice,
-        syncedInvoice ? 'success' : 'failed',
-      )
-    } catch (e: unknown) {
-      syncedInvoiceRecord = await this.updateInvoiceRecord(data, undefined, 'failed')
-      throw new APIError('Failed to store synced invoice record', status.INTERNAL_SERVER_ERROR, e)
-    }
-
-    logger.info(
-      `XeroInvoiceSyncService#syncInvoiceToXero :: Synced Copilot invoice ${syncedInvoiceRecord.copilotInvoiceId} (${syncedInvoice?.invoiceNumber}) to Xero invoice ${syncedInvoiceRecord.xeroInvoiceId} for portalId ${this.connection.portalId}`,
-    )
-    return syncedInvoiceRecord
   }
 
   private async getOrCreateInvoiceRecord(

@@ -1,4 +1,6 @@
-import { serializeContact } from '@invoice-sync/lib/serializer'
+import 'server-only'
+
+import { serializeContact } from '@invoice-sync/lib/serializers'
 import { and, eq } from 'drizzle-orm'
 import type { Contact } from 'xero-node'
 import z from 'zod'

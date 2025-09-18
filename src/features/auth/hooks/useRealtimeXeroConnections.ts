@@ -1,4 +1,4 @@
-import { useAppState } from '@/context/AppContext'
+import { useAppState } from '@/context/AppStateContext'
 import type { XeroConnection } from '@/db/schema/xeroConnections.schema'
 import type { ClientUser } from '@/lib/copilot/models/ClientUser.model'
 import { useRealtime } from '@/lib/supabase/hooks/useRealtime'
