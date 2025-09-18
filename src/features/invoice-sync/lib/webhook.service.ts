@@ -1,6 +1,6 @@
 import 'server-only'
 
-import XeroInvoiceSyncService from '@invoice-sync/lib/XeroInvoiceSync.service'
+import SyncedInvoicesService from '@invoice-sync/lib/SyncedInvoices.service'
 import { InvoiceCreatedEventSchema, type WebhookEvent } from '@invoice-sync/types'
 import status from 'http-status'
 import APIError from '@/errors/APIError'
@@ -33,7 +33,7 @@ class WebhookService extends AuthenticatedXeroService {
       throw new APIError(`Ignoring draft invoice ${eventData.id}`, status.OK)
     }
 
-    const xeroInvoiceSyncService = new XeroInvoiceSyncService(this.user, this.connection)
+    const xeroInvoiceSyncService = new SyncedInvoicesService(this.user, this.connection)
     return await xeroInvoiceSyncService.syncInvoiceToXero(data)
   }
 }

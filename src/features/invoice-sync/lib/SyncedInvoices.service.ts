@@ -1,7 +1,6 @@
 import 'server-only'
 
-import XeroContactService from '@invoice-sync/lib/SyncedContacts.service'
-import XeroTaxService from '@invoice-sync/lib/SyncedTax.service'
+import SyncedContactsService from '@invoice-sync/lib/SyncedContacts.service'
 import { serializeLineItems } from '@invoice-sync/lib/serializers'
 import type { InvoiceCreatedEvent } from '@invoice-sync/types'
 import { and, eq, inArray } from 'drizzle-orm'
@@ -12,6 +11,7 @@ import db from '@/db'
 import { type SyncedInvoiceCreatePayload, syncedInvoices } from '@/db/schema/syncedInvoices.schema'
 import { syncedItems } from '@/db/schema/syncedItems.schema'
 import APIError from '@/errors/APIError'
+import SyncedTaxRatesService from '@/features/invoice-sync/lib/SyncedTaxRates.service'
 import CopilotProductsService from '@/lib/copilot/services/CopilotProducts.service'
 import logger from '@/lib/logger'
 import AuthenticatedXeroService from '@/lib/xero/AuthenticatedXero.service'
@@ -22,7 +22,7 @@ import {
 import { datetimeToDate } from '@/utils/date'
 import { htmlToText } from '@/utils/html'
 
-class XeroInvoiceSyncService extends AuthenticatedXeroService {
+class SyncedInvoicesService extends AuthenticatedXeroService {
   async syncInvoiceToXero(data: InvoiceCreatedEvent): Promise<{
     copilotInvoiceId: string
     xeroInvoiceId: string | null
@@ -81,12 +81,12 @@ class XeroInvoiceSyncService extends AuthenticatedXeroService {
   }
 
   private async getTaxRate(data: InvoiceCreatedEvent) {
-    const xeroTaxService = new XeroTaxService(this.user, this.connection)
+    const xeroTaxService = new SyncedTaxRatesService(this.user, this.connection)
     return data.taxAmount ? await xeroTaxService.getTaxRateForItem(data.taxPercentage) : undefined
   }
 
   private async getContact(data: InvoiceCreatedEvent) {
-    const xeroContactService = new XeroContactService(this.user, this.connection)
+    const xeroContactService = new SyncedContactsService(this.user, this.connection)
     return await xeroContactService.getSyncedContact(data.clientId)
   }
 
@@ -249,4 +249,4 @@ class XeroInvoiceSyncService extends AuthenticatedXeroService {
   }
 }
 
-export default XeroInvoiceSyncService
+export default SyncedInvoicesService
