@@ -24,13 +24,6 @@
       "breakpoints": false
     },
     {
-      "idx": 3,
-      "version": "7",
-      "when": 1757337530729,
-      "tag": "20250908131850_add_client_contact_mappings_table",
-      "breakpoints": false
-    },
-    {
       "idx": 4,
       "version": "7",
       "when": 1757671313557,
