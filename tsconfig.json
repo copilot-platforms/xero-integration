@@ -22,7 +22,8 @@
     "paths": {
       "@/*": ["./src/*"],
       "@auth/*": ["./src/features/auth/*"],
-      "@invoice-sync/*": ["./src/features/invoice-sync/*"]
+      "@invoice-sync/*": ["./src/features/invoice-sync/*"],
+      "@webhook/*": ["./src/features/webhook/*"]
     }
   },
   "include": [

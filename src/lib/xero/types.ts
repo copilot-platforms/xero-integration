@@ -1,4 +1,4 @@
-import { type Contact, Invoice } from 'xero-node'
+import { type Contact, Invoice, TaxRate } from 'xero-node'
 import z from 'zod'
 import { AccountCode } from '@/lib/xero/constants'
 import type XeroAPI from '@/lib/xero/XeroAPI'
@@ -75,3 +75,26 @@ export const CreateInvoicePayloadSchema = z.object({
 export type CreateInvoicePayload = z.infer<typeof CreateInvoicePayloadSchema>
 
 export type ValidContact = Contact & { contactID: string }
+
+export const ContactCreatePayloadSchema = z.object({
+  name: z.string().min(1).optional(),
+  firstName: z.string().min(1).optional(),
+  lastName: z.string().optional(),
+  emailAddress: z.email(),
+})
+export type ContactCreatePayload = z.infer<typeof ContactCreatePayloadSchema>
+
+export const TaxRateCreatePayloadSchema = z.object({
+  name: z.string(),
+  taxComponents: z.array(
+    z.object({
+      name: z.string(),
+      rate: z.number(),
+      isCompound: z.boolean(),
+      isNonRecoverable: z.boolean(),
+    }),
+  ),
+  reportTaxType: z.enum(TaxRate.ReportTaxTypeEnum).optional(),
+  status: z.enum(TaxRate.StatusEnum),
+})
+export type TaxRateCreatePayload = z.infer<typeof TaxRateCreatePayloadSchema>

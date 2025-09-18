@@ -5,9 +5,13 @@ import { type Invoice, type Item, type TaxRate, type TokenSet, XeroClient } from
 import z from 'zod'
 import env from '@/config/server.env'
 import APIError from '@/errors/APIError'
-import type { ContactCreatePayload, TaxRateCreatePayload } from '@/features/invoice-sync/types'
 import logger from '@/lib/logger'
-import type { CreateInvoicePayload, ValidContact } from '@/lib/xero/types'
+import type {
+  ContactCreatePayload,
+  CreateInvoicePayload,
+  TaxRateCreatePayload,
+  ValidContact,
+} from '@/lib/xero/types'
 import { getServerUrl } from '@/utils/serverUrl'
 
 class XeroAPI {

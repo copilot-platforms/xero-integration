@@ -1,7 +1,7 @@
 'use client'
 
 import { Callout } from '@/components/ui/Callout'
-import { useAppState } from '@/context/AppContext'
+import { useAppState } from '@/context/AppStateContext'
 
 export const CalloutSection = () => {
   const { user, connectionStatus } = useAppState()

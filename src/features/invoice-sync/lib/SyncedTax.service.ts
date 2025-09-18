@@ -1,7 +1,9 @@
-import { type TaxRateCreatePayload, TaxRateCreatePayloadSchema } from '@invoice-sync/types'
+import 'server-only'
+
 import { type TaxComponent, TaxRate } from 'xero-node'
 import logger from '@/lib/logger'
 import AuthenticatedXeroService from '@/lib/xero/AuthenticatedXero.service'
+import { type TaxRateCreatePayload, TaxRateCreatePayloadSchema } from '@/lib/xero/types'
 import { areNumbersEqual } from '@/utils/number'
 
 class XeroTaxService extends AuthenticatedXeroService {
