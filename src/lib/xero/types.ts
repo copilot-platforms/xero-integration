@@ -14,17 +14,39 @@ export type XeroTokenSet = Awaited<ReturnType<typeof XeroAPI.prototype.handleApi
  * Ref: https://developer.xero.com/documentation/api/accounting/invoices#post-invoices
  *
  */
-export const LineItemSchema = z.object({
-  description: z.string().min(1),
-  quantity: z.number().min(1).positive(),
-  unitAmount: z.number().positive(),
-  taxAmount: z.number().nonnegative(),
-  taxType: z.string().optional(),
-  lineItemID: z.uuid().optional(),
-  itemCode: z.string().optional(),
-  // Unique code to identify Xero item
-  accountCode: z.enum(AccountCode),
-})
+export const LineItemSchema = z
+  .object({
+    description: z.string().min(1),
+    quantity: z.number().min(1).positive(),
+    unitAmount: z.number().positive(),
+    taxAmount: z.number().nonnegative(),
+    taxType: z.string().optional(),
+    lineItemID: z.uuid().optional(),
+    itemCode: z.string().optional(),
+    // Unique code to identify Xero item
+    accountCode: z.enum(AccountCode),
+  })
+  .superRefine((data, ctx) => {
+    const both = data.lineItemID && data.itemCode
+    const neither = !data.lineItemID && !data.itemCode
+
+    if (!(both || neither)) {
+      if (!data.lineItemID) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['lineItemID'],
+          message: 'Provide lineItemID when itemCode is set.',
+        })
+      }
+      if (!data.itemCode) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['itemCode'],
+          message: 'Provide itemCode when lineItemID is set.',
+        })
+      }
+    }
+  })
 export type LineItem = z.infer<typeof LineItemSchema>
 
 export const ContactSchema = z.object({
