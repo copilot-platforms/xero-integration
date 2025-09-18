@@ -13,7 +13,7 @@ import logger from '@/lib/logger'
 import AuthenticatedXeroService from '@/lib/xero/AuthenticatedXero.service'
 import type { ValidContact } from '@/lib/xero/types'
 
-class XeroContactService extends AuthenticatedXeroService {
+class SyncedContactsService extends AuthenticatedXeroService {
   async getSyncedContact(clientId: string): Promise<Contact> {
     const copilot = new CopilotAPI(this.user.token)
     const client = await copilot.getClient(clientId)
@@ -92,4 +92,4 @@ class XeroContactService extends AuthenticatedXeroService {
   }
 }
 
-export default XeroContactService
+export default SyncedContactsService

@@ -6,7 +6,7 @@ import AuthenticatedXeroService from '@/lib/xero/AuthenticatedXero.service'
 import { type TaxRateCreatePayload, TaxRateCreatePayloadSchema } from '@/lib/xero/types'
 import { areNumbersEqual } from '@/utils/number'
 
-class XeroTaxService extends AuthenticatedXeroService {
+class SyncedTaxRatesService extends AuthenticatedXeroService {
   async getTaxRateForItem(effectiveRate: number) {
     const taxRates = await this.xero.getTaxRates(this.connection.tenantId)
     let matchingTaxRate = taxRates?.find((t) => areNumbersEqual(t.effectiveRate, effectiveRate))
@@ -36,4 +36,4 @@ class XeroTaxService extends AuthenticatedXeroService {
   }
 }
 
-export default XeroTaxService
+export default SyncedTaxRatesService
