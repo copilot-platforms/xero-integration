@@ -1,14 +1,15 @@
 import type SyncedInvoicesService from '@invoice-sync/lib/SyncedInvoices.service'
 import { calculateTaxAmount } from '@invoice-sync/lib/utils'
-import {
-  type ContactCreatePayload,
-  ContactCreatePayloadSchema,
-  type InvoiceCreatedEvent,
-} from '@invoice-sync/types'
+import type { InvoiceCreatedEvent } from '@invoice-sync/types'
 import type { TaxRate, LineItem as XeroLineItem } from 'xero-node'
 import type { ClientResponse } from '@/lib/copilot/types'
 import { AccountCode } from '@/lib/xero/constants'
-import { type LineItem, LineItemSchema } from '@/lib/xero/types'
+import {
+  type ContactCreatePayload,
+  ContactCreatePayloadSchema,
+  type LineItem,
+  LineItemSchema,
+} from '@/lib/xero/types'
 
 export const serializeLineItems = (
   copilotItems: InvoiceCreatedEvent['lineItems'],
