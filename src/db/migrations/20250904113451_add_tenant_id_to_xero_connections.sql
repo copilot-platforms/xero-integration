@@ -1,1 +1,0 @@
-ALTER TABLE "xero_connections" ADD COLUMN "tenant_id" uuid;
