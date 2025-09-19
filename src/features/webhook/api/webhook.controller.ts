@@ -1,6 +1,6 @@
 import AuthService from '@auth/lib/Auth.service'
-import WebhookService from '@invoice-sync/lib/webhook.service'
 import { WebhookEventSchema } from '@invoice-sync/types'
+import WebhookService from '@webhook/lib/webhook.service'
 import { type NextRequest, NextResponse } from 'next/server'
 import User from '@/lib/copilot/models/User.model'
 
