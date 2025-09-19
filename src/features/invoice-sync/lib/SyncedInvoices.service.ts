@@ -12,7 +12,6 @@ import { type SyncedInvoiceCreatePayload, syncedInvoices } from '@/db/schema/syn
 import { syncedItems } from '@/db/schema/syncedItems.schema'
 import APIError from '@/errors/APIError'
 import SyncedTaxRatesService from '@/features/invoice-sync/lib/SyncedTaxRates.service'
-import CopilotProductsService from '@/lib/copilot/services/CopilotProducts.service'
 import logger from '@/lib/logger'
 import AuthenticatedXeroService from '@/lib/xero/AuthenticatedXero.service'
 import {
@@ -91,8 +90,6 @@ class SyncedInvoicesService extends AuthenticatedXeroService {
   }
 
   private async getProductsWithPrice(data: InvoiceCreatedEvent) {
-    const copilotProductsService = new CopilotProductsService(this.user)
-
     // Get existing products & prices
     const lineProductIds = [],
       linePriceIds = []
@@ -100,8 +97,8 @@ class SyncedInvoicesService extends AuthenticatedXeroService {
       item.productId && lineProductIds.push(item.productId)
       item.priceId && linePriceIds.push(item.priceId)
     }
-    const products = await copilotProductsService.getCopilotProducts(lineProductIds)
-    const prices = await copilotProductsService.getCopilotPrices(linePriceIds)
+    const products = await this.copilot.getProductsById(lineProductIds)
+    const prices = await this.copilot.getPricesById(linePriceIds)
 
     // Get all synced items from db
     const syncedXeroItems = await db
