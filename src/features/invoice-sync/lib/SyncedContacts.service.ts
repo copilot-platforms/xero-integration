@@ -22,7 +22,11 @@ class SyncedContactsService extends AuthenticatedXeroService {
       .select({ contactID: syncedContacts.contactId })
       .from(syncedContacts)
       .where(
-        and(eq(syncedContacts.portalId, this.user.portalId), eq(syncedContacts.clientId, clientId)),
+        and(
+          eq(syncedContacts.portalId, this.user.portalId),
+          eq(syncedContacts.tenantId, this.connection.tenantId),
+          eq(syncedContacts.clientId, clientId),
+        ),
       )
 
     let contact = syncedContactRecords[0]
@@ -40,6 +44,7 @@ class SyncedContactsService extends AuthenticatedXeroService {
         .where(
           and(
             eq(syncedContacts.portalId, this.user.portalId),
+            eq(syncedContacts.tenantId, this.connection.tenantId),
             eq(syncedContacts.clientId, clientId),
           ),
         )

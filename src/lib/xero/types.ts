@@ -98,3 +98,9 @@ export const TaxRateCreatePayloadSchema = z.object({
   status: z.enum(TaxRate.StatusEnum),
 })
 export type TaxRateCreatePayload = z.infer<typeof TaxRateCreatePayloadSchema>
+
+export const ItemUpdatePayloadSchema = z.object({
+  name: z.string().optional(),
+  description: z.string().optional(),
+})
+export type ItemUpdatePayload = z.infer<typeof ItemUpdatePayloadSchema>
