@@ -1,4 +1,3 @@
-import { TaxRate } from 'xero-node'
 import z from 'zod'
 
 export const WebhookTokenSchema = z.object({
@@ -35,31 +34,47 @@ export const InvoiceCreatedEventSchema = z.object({
 })
 export type InvoiceCreatedEvent = z.infer<typeof InvoiceCreatedEventSchema>
 
-export const WebhookEventSchema = z.object({
-  eventType: z.literal('invoice.created'),
+export const ProductUpdatedEventSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string(),
+})
+export type ProductUpdatedEvent = z.infer<typeof ProductUpdatedEventSchema>
+
+export const PriceCreatedEventSchema = z.object({
+  id: z.string(),
+  productId: z.string(),
+  amount: z.number(),
+})
+export type PriceCreatedEvent = z.infer<typeof PriceCreatedEventSchema>
+
+export enum ValidWebhookEvent {
+  InvoiceCreated = 'invoice.created',
+  ProductUpdated = 'product.updated',
+  PriceCreated = 'price.created',
+}
+
+export const InvoiceCreatedWebhookSchema = z.object({
+  eventType: z.literal(ValidWebhookEvent.InvoiceCreated),
   data: InvoiceCreatedEventSchema,
 })
+export type InvoiceCreatedWebhook = z.infer<typeof InvoiceCreatedWebhookSchema>
+
+export const ProductUpdatedWebhookSchema = z.object({
+  eventType: z.literal(ValidWebhookEvent.ProductUpdated),
+  data: ProductUpdatedEventSchema,
+})
+export type ProductUpdatedWebhook = z.infer<typeof ProductUpdatedWebhookSchema>
+
+export const PriceCreatedWebhookSchema = z.object({
+  eventType: z.literal(ValidWebhookEvent.PriceCreated),
+  data: PriceCreatedEventSchema,
+})
+export type PriceCreatedWebhook = z.infer<typeof PriceCreatedWebhookSchema>
+
+export const WebhookEventSchema = z.discriminatedUnion('eventType', [
+  InvoiceCreatedWebhookSchema,
+  ProductUpdatedWebhookSchema,
+  PriceCreatedWebhookSchema,
+])
 export type WebhookEvent = z.infer<typeof WebhookEventSchema>
-
-export const ContactCreatePayloadSchema = z.object({
-  name: z.string().min(1).optional(),
-  firstName: z.string().min(1).optional(),
-  lastName: z.string().optional(),
-  emailAddress: z.email(),
-})
-export type ContactCreatePayload = z.infer<typeof ContactCreatePayloadSchema>
-
-export const TaxRateCreatePayloadSchema = z.object({
-  name: z.string(),
-  taxComponents: z.array(
-    z.object({
-      name: z.string(),
-      rate: z.number(),
-      isCompound: z.boolean(),
-      isNonRecoverable: z.boolean(),
-    }),
-  ),
-  reportTaxType: z.enum(TaxRate.ReportTaxTypeEnum).optional(),
-  status: z.enum(TaxRate.StatusEnum),
-})
-export type TaxRateCreatePayload = z.infer<typeof TaxRateCreatePayloadSchema>
