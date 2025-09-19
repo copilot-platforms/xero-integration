@@ -9,6 +9,7 @@ import logger from '@/lib/logger'
 import type {
   ContactCreatePayload,
   CreateInvoicePayload,
+  ItemUpdatePayload,
   TaxRateCreatePayload,
   ValidContact,
 } from '@/lib/xero/types'
@@ -141,6 +142,19 @@ class XeroAPI {
 
     const { body } = await this.xero.accountingApi.createItems(tenantId, { items })
     return body.items || []
+  }
+
+  async updateItem(
+    tenantId: string,
+    itemID: string,
+    item: ItemUpdatePayload & { code: Item['code'] },
+  ): Promise<Item> {
+    const { body } = await this.xero.accountingApi.updateItem(tenantId, itemID, { items: [item] })
+    const updatedItem = body.items?.[0]
+    if (!updatedItem) {
+      throw new APIError('Unable to update item', status.INTERNAL_SERVER_ERROR)
+    }
+    return updatedItem
   }
 }
 
