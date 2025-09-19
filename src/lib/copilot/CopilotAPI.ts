@@ -137,20 +137,41 @@ export class CopilotAPI {
     return NotificationCreatedResponseSchema.parse(notification)
   }
 
+  /**
+   * Returns an object with product ID as key and product as value
+   * @param productIds Products to get details for
+   */
   async _getProducts(
+    productIds: string[],
     args: CopilotListArgs = { limit: MAX_FETCH_COPILOT_RESOURCES },
-  ): Promise<CopilotProduct[]> {
-    logger.info('CopilotAPI#_getProducts', args)
-    const products = await this.copilot.listProducts(args)
-    return z.array(CopilotProductSchema).parse(products.data)
+  ): Promise<Record<string, CopilotProduct>> {
+    const allProductsResponse = await this.copilot.listProducts(args)
+    const allProducts = z.array(CopilotProductSchema).parse(allProductsResponse.data)
+
+    return allProducts.reduce<Record<string, CopilotProduct>>((acc, product) => {
+      if (productIds.includes(product.id)) {
+        acc[product.id] = product
+      }
+      return acc
+    }, {})
   }
 
+  /**
+   * Returns an object with price ID as key and price as value
+   * @param priceIds Prices to get details for
+   */
   async _getPrices(
-    args: CopilotListArgs = { limit: MAX_FETCH_COPILOT_RESOURCES },
-  ): Promise<CopilotPrice[]> {
-    logger.info('CopilotAPI#_getProducts', args)
-    const prices = await this.copilot.listPrices({ limit: '10_000' })
-    return z.array(CopilotPriceSchema).parse(prices.data)
+    priceIds: string[],
+    args = { limit: '10_000' },
+  ): Promise<Record<string, CopilotPrice>> {
+    const allPricesResponse = await this.copilot.listPrices(args)
+    const allPrices = z.array(CopilotPriceSchema).parse(allPricesResponse.data)
+    return allPrices.reduce<Record<string, CopilotPrice>>((acc, price) => {
+      if (priceIds.includes(price.id)) {
+        acc[price.id] = price
+      }
+      return acc
+    }, {})
   }
 
   private wrapWithRetry<Args extends unknown[], R>(
@@ -174,6 +195,6 @@ export class CopilotAPI {
   getInternalUsers = this.wrapWithRetry(this._getInternalUsers)
   getInternalUser = this.wrapWithRetry(this._getInternalUser)
   createNotification = this.wrapWithRetry(this._createNotification)
-  getProducts = this.wrapWithRetry(this._getProducts)
-  getPrices = this.wrapWithRetry(this._getPrices)
+  getProductsById = this.wrapWithRetry(this._getProducts)
+  getPricesById = this.wrapWithRetry(this._getPrices)
 }
