@@ -1,11 +1,11 @@
 {
-  "id": "1998a1f6-c534-4703-9be7-b76a58128af4",
-  "prevId": "7ba10339-515c-412d-8c99-0285085f1f61",
+  "id": "39b63cf4-6258-4ca7-97dc-ecdefca400c4",
+  "prevId": "fa9a0acd-853d-4d31-9140-233af4876ce7",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
-    "public.client_contact_mappings": {
-      "name": "client_contact_mappings",
+    "public.synced_contacts": {
+      "name": "synced_contacts",
       "schema": "",
       "columns": {
         "id": {
@@ -55,8 +55,8 @@
         }
       },
       "indexes": {
-        "uq_client_contact_mappings_portal_id_client_id": {
-          "name": "uq_client_contact_mappings_portal_id_client_id",
+        "uq_synced_contacts_portal_id_client_id": {
+          "name": "uq_synced_contacts_portal_id_client_id",
           "columns": [
             {
               "expression": "portal_id",
@@ -154,6 +154,98 @@
             },
             {
               "expression": "copilot_invoice_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.synced_items": {
+      "name": "synced_items",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "portal_id": {
+          "name": "portal_id",
+          "type": "varchar(16)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "product_id": {
+          "name": "product_id",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "price_id": {
+          "name": "price_id",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "item_id": {
+          "name": "item_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tenant_id": {
+          "name": "tenant_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "uq_synced_items_portal_id_product_id_price_id": {
+          "name": "uq_synced_items_portal_id_product_id_price_id",
+          "columns": [
+            {
+              "expression": "portal_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "product_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "price_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
