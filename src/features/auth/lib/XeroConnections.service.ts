@@ -1,3 +1,5 @@
+import 'server-only'
+
 import { eq } from 'drizzle-orm'
 import type { TokenSet } from 'xero-node'
 import { z } from 'zod'

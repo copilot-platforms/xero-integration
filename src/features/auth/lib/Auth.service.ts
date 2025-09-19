@@ -1,3 +1,5 @@
+import 'server-only'
+
 import { sendAuthorizationFailedNotification } from '@auth/lib/Auth.helpers'
 import XeroConnectionsService from '@auth/lib/XeroConnections.service'
 import type { TokenSet } from 'xero-node'
