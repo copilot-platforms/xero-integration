@@ -1,3 +1,5 @@
+import 'server-only'
+
 import type { PriceCreatedEvent } from '@invoice-sync/types'
 import { and, eq, inArray } from 'drizzle-orm'
 import type { Item } from 'xero-node'
