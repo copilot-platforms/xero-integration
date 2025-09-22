@@ -62,8 +62,8 @@ class WebhookService extends AuthenticatedXeroService {
   private handlePriceCreated = async (eventData: unknown) => {
     const data = PriceCreatedEventSchema.parse(eventData)
 
-    await logger.info('WebhookService#handleProductUpdated :: Handling product updated event', data)
-    return {}
+    const syncedItemsService = new SyncedItemsService(this.user, this.connection)
+    return await syncedItemsService.createItemForPrice(data)
   }
 }
 
