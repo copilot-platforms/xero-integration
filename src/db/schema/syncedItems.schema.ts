@@ -1,5 +1,5 @@
 import { pgTable, uniqueIndex, uuid, varchar } from 'drizzle-orm/pg-core'
-import { createInsertSchema } from 'drizzle-zod'
+import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
 import type z from 'zod'
 import { timestamps } from '@/db/db.helpers'
 
@@ -37,3 +37,6 @@ export const syncedItems = pgTable(
 
 export const SyncedItemCreatePayloadSchema = createInsertSchema(syncedItems)
 export type SyncedItemCreatePayload = z.infer<typeof SyncedItemCreatePayloadSchema>
+
+export const SyncedItemSchma = createSelectSchema(syncedItems)
+export type SyncedItem = z.infer<typeof SyncedItemSchma>

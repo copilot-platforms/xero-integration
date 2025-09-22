@@ -2,16 +2,20 @@ import 'server-only'
 
 import type { PriceCreatedEvent } from '@invoice-sync/types'
 import { and, eq, inArray } from 'drizzle-orm'
+import status from 'http-status'
 import type { Item } from 'xero-node'
 import z from 'zod'
 import db from '@/db'
 import { syncedItems } from '@/db/schema/syncedItems.schema'
+import APIError from '@/errors/APIError'
 import logger from '@/lib/logger'
 import AuthenticatedXeroService from '@/lib/xero/AuthenticatedXero.service'
 import type { ItemUpdatePayload } from '@/lib/xero/types'
 
 class SyncedItemsService extends AuthenticatedXeroService {
   async createItems(itemsToCreate: Item[], prices: Record<string, PriceCreatedEvent>) {
+    if (!itemsToCreate.length) return []
+
     const newlyCreatedItems = await this.xero.createItems(this.connection.tenantId, itemsToCreate)
     await db.insert(syncedItems).values(
       newlyCreatedItems.map((item) => ({
@@ -73,6 +77,23 @@ class SyncedItemsService extends AuthenticatedXeroService {
       items.push(updatedItem)
     }
     return items
+  }
+
+  async createItemForPrice(price: PriceCreatedEvent): Promise<Item> {
+    const productMap = await this.copilot.getProductsById([price.productId])
+    const product = productMap[price.productId]
+    if (!product) {
+      throw new APIError('Could not find product for mapping', status.BAD_REQUEST)
+    }
+
+    const payload = {
+      code: price.id,
+      name: product.name,
+      description: product.description,
+    }
+
+    const items = await this.createItems([payload], { [price.id]: price })
+    return items[0]
   }
 }
 
