@@ -11,6 +11,7 @@ import {
 import SyncedItemsService from '@items-sync/lib/SyncedItems.service'
 import status from 'http-status'
 import APIError from '@/errors/APIError'
+import FailedSyncsService from '@/features/failed-sync-handling/lib/FailedSyncs.service'
 import logger from '@/lib/logger'
 import AuthenticatedXeroService from '@/lib/xero/AuthenticatedXero.service'
 import { type ItemUpdatePayload, ItemUpdatePayloadSchema } from '@/lib/xero/types'
@@ -31,7 +32,17 @@ class WebhookService extends AuthenticatedXeroService {
       [ValidWebhookEvent.PriceCreated]: this.handlePriceCreated,
     }
     const handler = eventHandlerMap[data.eventType]
-    return await handler(data.data)
+    try {
+      return await handler(data.data)
+    } catch (e: unknown) {
+      const failedSyncsService = new FailedSyncsService(this.user)
+      await failedSyncsService.addFailedSyncRecord(
+        this.connection.tenantId,
+        data.eventType,
+        data.data,
+      )
+      throw e
+    }
   }
 
   private handleInvoiceCreated = async (eventData: unknown) => {
@@ -39,7 +50,6 @@ class WebhookService extends AuthenticatedXeroService {
     if (data.status === 'draft') {
       throw new APIError(`Ignoring draft invoice ${data.id}`, status.OK)
     }
-
     const xeroInvoiceSyncService = new XeroInvoiceSyncService(this.user, this.connection)
     return await xeroInvoiceSyncService.syncInvoiceToXero(data)
   }
