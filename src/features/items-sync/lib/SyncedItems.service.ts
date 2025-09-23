@@ -91,6 +91,10 @@ class SyncedItemsService extends AuthenticatedXeroService {
       code: price.id,
       name: product.name,
       description: htmlToText(product.description),
+      isPurchased: false,
+      salesDetails: {
+        unitPrice: price.amount,
+      },
     }
 
     const items = await this.createItems([payload], { [price.id]: price })
