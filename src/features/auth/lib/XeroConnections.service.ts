@@ -15,9 +15,10 @@ import XeroAPI from '@/lib/xero/XeroAPI'
 
 class XeroConnectionsService extends BaseService {
   async getConnectionForWorkspace(): Promise<XeroConnection> {
-    let connection = await db.query.xeroConnections.findFirst({
-      where: eq(xeroConnections.portalId, this.user.portalId),
-    })
+    let [connection] = await db
+      .select()
+      .from(xeroConnections)
+      .where(eq(xeroConnections.portalId, this.user.portalId))
 
     if (!connection) {
       const newConnection = await db
