@@ -93,7 +93,7 @@ class SyncedItemsService extends AuthenticatedXeroService {
       description: htmlToText(product.description),
       isPurchased: false,
       salesDetails: {
-        unitPrice: price.amount,
+        unitPrice: price.amount / 100,
       },
     }
 
