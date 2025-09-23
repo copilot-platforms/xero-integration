@@ -11,6 +11,7 @@ import APIError from '@/errors/APIError'
 import logger from '@/lib/logger'
 import AuthenticatedXeroService from '@/lib/xero/AuthenticatedXero.service'
 import type { ItemUpdatePayload } from '@/lib/xero/types'
+import { htmlToText } from '@/utils/html'
 
 class SyncedItemsService extends AuthenticatedXeroService {
   async createItems(itemsToCreate: Item[], prices: Record<string, PriceCreatedEvent>) {
@@ -89,7 +90,7 @@ class SyncedItemsService extends AuthenticatedXeroService {
     const payload = {
       code: price.id,
       name: product.name,
-      description: product.description,
+      description: htmlToText(product.description),
     }
 
     const items = await this.createItems([payload], { [price.id]: price })
