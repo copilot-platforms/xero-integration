@@ -15,6 +15,13 @@
       "when": 1758254954871,
       "tag": "20250919040914_add_inital_sync_tables",
       "breakpoints": false
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1758623236059,
+      "tag": "20250923102716_add_failed_syncs_table",
+      "breakpoints": false
     }
   ]
 }
