@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
-import type { PageProps } from '@/app/types'
+import type { PageProps } from '@/app/(home)/types'
 import User from '@/lib/copilot/models/User.model'
 import XeroAPI from '@/lib/xero/XeroAPI'
 

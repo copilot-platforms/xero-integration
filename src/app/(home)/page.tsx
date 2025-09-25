@@ -1,7 +1,7 @@
 import { CalloutSection } from '@auth/components/CalloutSection'
 import { RealtimeXeroConnections } from '@auth/components/RealtimeXeroConnections'
 import AuthService from '@auth/lib/Auth.service'
-import type { PageProps } from '@/app/types'
+import type { PageProps } from '@/app/(home)/types'
 import { AppStateContextProvider } from '@/context/AppStateContext'
 import { serializeClientUser } from '@/lib/copilot/models/ClientUser.model'
 import User from '@/lib/copilot/models/User.model'
