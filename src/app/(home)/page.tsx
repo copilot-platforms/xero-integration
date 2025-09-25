@@ -1,9 +1,9 @@
-import { SettingsForm } from '@@home/components/SettingsForm'
 import { CalloutSection } from '@auth/components/CalloutSection'
 import { RealtimeXeroConnections } from '@auth/components/RealtimeXeroConnections'
+import { AuthContextProvider } from '@auth/context/AuthContext'
 import AuthService from '@auth/lib/Auth.service'
 import type { PageProps } from '@/app/(home)/types'
-import { AuthContextProvider } from '@/features/auth/context/AuthContext'
+import { SettingsForm } from '@/features/sync-settings/components/SettingsForm'
 import { serializeClientUser } from '@/lib/copilot/models/ClientUser.model'
 import User from '@/lib/copilot/models/User.model'
 

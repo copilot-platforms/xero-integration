@@ -2,6 +2,7 @@
 
 import { Heading } from 'copilot-design-system'
 import Divider from '@/components/layouts/Divider'
+import Accordion from '@/components/ui/Accordion'
 
 export const SettingsForm = () => {
   return (
@@ -10,6 +11,17 @@ export const SettingsForm = () => {
         Settings
       </Heading>
       <Divider />
+      <Accordion
+        item={{
+          id: 'sync-settings',
+          header: 'Sync Settings',
+          content: <div>Sync Settings</div>,
+        }}
+        toggleItemAction={() => {
+          return undefined
+        }}
+        isOpen={false}
+      />
     </div>
   )
 }
