@@ -21,5 +21,5 @@ export const CalloutSection = () => {
       />
     )
 
-  return <div className="text-2xl">Connected!</div>
+  return null
 }

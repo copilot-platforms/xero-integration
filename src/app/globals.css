@@ -14,6 +14,7 @@
   --color-card-border: #ededf0;
   --color-button-primary: #212b36;
   --color-button-disabled: #1f000000;
+  --color-card-divider: #ededf0;
 
   /* Text */
   --color-text-primary: var(--text-primary);

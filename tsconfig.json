@@ -21,6 +21,7 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"],
+      "@@home/*": ["./src/app/(home)/*"],
       "@auth/*": ["./src/features/auth/*"],
       "@invoice-sync/*": ["./src/features/invoice-sync/*"],
       "@items-sync/*": ["./src/features/items-sync/*"],

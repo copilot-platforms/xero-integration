@@ -1,3 +1,4 @@
+import { SettingsForm } from '@@home/components/SettingsForm'
 import { CalloutSection } from '@auth/components/CalloutSection'
 import { RealtimeXeroConnections } from '@auth/components/RealtimeXeroConnections'
 import AuthService from '@auth/lib/Auth.service'
@@ -23,6 +24,9 @@ const Home = async ({ searchParams }: PageProps) => {
       <main className="min-h-[100vh] px-8 pt-6 pb-[54px] sm:px-[100px] lg:px-[220px]">
         <RealtimeXeroConnections user={clientUser} />
         <CalloutSection />
+        <section>
+          <SettingsForm />
+        </section>
       </main>
     </AppStateContextProvider>
   )
