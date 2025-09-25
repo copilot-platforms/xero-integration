@@ -9,14 +9,14 @@ export const syncedContacts = pgTable(
     // Workspace ID / Portal ID in Copilot
     portalId: varchar({ length: 16 }).notNull(),
 
+    // Active Tenant ID for Xero
+    tenantId: uuid().notNull(),
+
     // Copilot ClientID
     clientId: uuid().notNull(),
 
     // Xero contactID (Ref: https://developer.xero.com/documentation/api/accounting/contacts)
     contactId: uuid().notNull(),
-
-    // Active Tenant ID for Xero
-    tenantId: uuid().notNull(),
 
     ...timestamps,
   },

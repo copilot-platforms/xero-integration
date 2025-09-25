@@ -16,6 +16,9 @@ export const failedSyncs = pgTable(
     // Workspace ID / Portal ID in Copilot
     portalId: varchar({ length: 16 }).notNull(),
 
+    // Active Tenant ID (most recently connected Xero organization)
+    tenantId: uuid().notNull(),
+
     // Type of sync
     type: failedSyncTypeEnum().notNull(),
 
@@ -30,9 +33,6 @@ export const failedSyncs = pgTable(
 
     // Payload of the failed sync webhook
     payload: jsonb().notNull(),
-
-    // Active Tenant ID (most recently connected Xero organization)
-    tenantId: uuid().notNull(),
 
     ...timestamps,
   },

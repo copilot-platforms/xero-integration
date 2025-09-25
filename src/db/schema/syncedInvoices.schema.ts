@@ -17,6 +17,9 @@ export const syncedInvoices = pgTable(
     // Workspace ID / Portal ID in Copilot
     portalId: varchar({ length: 16 }).notNull(),
 
+    // Active Tenant ID (most recently connected Xero organization)
+    tenantId: uuid().notNull(),
+
     // Invoice ID for Copilot invoice
     copilotInvoiceId: varchar({ length: 64 }).notNull(),
 
@@ -25,9 +28,6 @@ export const syncedInvoices = pgTable(
 
     // Status for sync
     status: syncedInvoiceStatusEnum().default('pending').notNull(),
-
-    // Active Tenant ID (most recently connected Xero organization)
-    tenantId: uuid().notNull(),
 
     ...timestamps,
   },

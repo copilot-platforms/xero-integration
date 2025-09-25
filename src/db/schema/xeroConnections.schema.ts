@@ -12,6 +12,9 @@ export const xeroConnections = pgTable(
     // Workspace ID / Portal ID in Copilot
     portalId: varchar({ length: 16 }).notNull(),
 
+    // Active Tenant ID (most recently connected Xero organization)
+    tenantId: uuid(),
+
     // Xero tokenset returned after a successful OAuth connection
     tokenSet: jsonb().$type<TokenSet>(),
 
@@ -20,9 +23,6 @@ export const xeroConnections = pgTable(
 
     // Copilot internalUserId that initiated the connection
     initiatedBy: uuid().notNull(),
-
-    // Active Tenant ID (most recently connected Xero organization)
-    tenantId: uuid(),
 
     ...timestamps,
   },

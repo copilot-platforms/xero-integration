@@ -11,6 +11,9 @@ export const syncedItems = pgTable(
     // Workspace ID / Portal ID in Copilot
     portalId: varchar({ length: 16 }).notNull(),
 
+    // Active Tenant ID (most recently connected Xero organization)
+    tenantId: uuid().notNull(),
+
     // Product ID for Copilot
     productId: varchar({ length: 64 }).notNull(),
 
@@ -19,9 +22,6 @@ export const syncedItems = pgTable(
 
     // Item ID for synced Item in Xero
     itemId: uuid().notNull(),
-
-    // Active Tenant ID (most recently connected Xero organization)
-    tenantId: uuid().notNull(),
 
     ...timestamps,
   },
