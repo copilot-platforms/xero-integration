@@ -11,7 +11,7 @@ import {
 import SyncedItemsService from '@items-sync/lib/SyncedItems.service'
 import status from 'http-status'
 import APIError from '@/errors/APIError'
-import FailedSyncsService from '@/features/failed-sync-handling/lib/FailedSyncs.service'
+import FailedSyncsService from '@/features/failed-syncs/lib/FailedSyncs.service'
 import logger from '@/lib/logger'
 import AuthenticatedXeroService from '@/lib/xero/AuthenticatedXero.service'
 import { type ItemUpdatePayload, ItemUpdatePayloadSchema } from '@/lib/xero/types'
