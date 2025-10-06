@@ -1,4 +1,6 @@
 import { boolean, pgTable, uniqueIndex, uuid, varchar } from 'drizzle-orm/pg-core'
+import { createSelectSchema } from 'drizzle-zod'
+import type z from 'zod'
 import { timestamps } from '@/db/db.helpers'
 
 export const settings = pgTable(
@@ -22,12 +24,18 @@ export const settings = pgTable(
 
     // Flags if user is mapping invoice settings for the first time
     initialInvoiceSettingsMapping: boolean().notNull().default(false),
-
-    // Flags if user is mapping on the products table for the first time
     initialProductSettingsMapping: boolean().notNull().default(false),
 
+    // Flags if user is mapping on the products table for the first time
     ...timestamps,
   },
   // Only allow one setting per portal x tenantId (each synced tenant must have a different setting)
   (t) => [uniqueIndex('uq_settings_portal_id_tenant_id').on(t.portalId, t.tenantId)],
 )
+
+export const SettingsSchema = createSelectSchema(settings)
+export type Settings = z.infer<typeof SettingsSchema>
+export type SettingsFields = Omit<
+  Settings,
+  'id' | 'portalId' | 'tenantId' | 'createdAt' | 'updatedAt'
+>
