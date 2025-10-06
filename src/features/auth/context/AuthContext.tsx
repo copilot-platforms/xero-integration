@@ -2,10 +2,12 @@
 
 import { createContext, type ReactNode, useState } from 'react'
 import type { ClientUser } from '@/lib/copilot/models/ClientUser.model'
+import type { WorkspaceResponse } from '@/lib/copilot/types'
 
 export type AuthContextType = {
   user: ClientUser
   connectionStatus: boolean
+  workspace: WorkspaceResponse
 }
 
 export const AuthContext = createContext<
@@ -19,11 +21,13 @@ export const AuthContext = createContext<
 export const AuthContextProvider = ({
   user,
   connectionStatus,
+  workspace,
   children,
 }: AuthContextType & { children: ReactNode }) => {
   const [auth, setAuth] = useState<AuthContextType>({
     user,
     connectionStatus,
+    workspace,
   })
   return (
     <AuthContext.Provider

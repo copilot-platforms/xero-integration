@@ -24,6 +24,14 @@ export type Token = z.infer<typeof TokenSchema>
 export const WorkspaceResponseSchema = z.object({
   id: z.string(),
   brandName: z.string().optional(),
+  labels: z
+    .object({
+      individualTerm: z.string().optional(),
+      individualTermPlural: z.string().optional(),
+      groupTerm: z.string().optional(),
+      groupTermPlural: z.string().optional(),
+    })
+    .optional(),
 })
 export type WorkspaceResponse = z.infer<typeof WorkspaceResponseSchema>
 
