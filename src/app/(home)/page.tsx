@@ -3,7 +3,7 @@ import { CalloutSection } from '@auth/components/CalloutSection'
 import { RealtimeXeroConnections } from '@auth/components/RealtimeXeroConnections'
 import AuthService from '@auth/lib/Auth.service'
 import type { PageProps } from '@/app/(home)/types'
-import { AppStateContextProvider } from '@/context/AppStateContext'
+import { AuthContextProvider } from '@/features/auth/context/AuthContext'
 import { serializeClientUser } from '@/lib/copilot/models/ClientUser.model'
 import User from '@/lib/copilot/models/User.model'
 
@@ -20,7 +20,7 @@ const Home = async ({ searchParams }: PageProps) => {
   const clientUser = serializeClientUser(user)
 
   return (
-    <AppStateContextProvider user={clientUser} connectionStatus={!!xeroConection.status}>
+    <AuthContextProvider user={clientUser} connectionStatus={!!xeroConection.status}>
       <main className="min-h-[100vh] px-8 pt-6 pb-[54px] sm:px-[100px] lg:px-[220px]">
         <RealtimeXeroConnections user={clientUser} />
         <CalloutSection />
@@ -28,7 +28,7 @@ const Home = async ({ searchParams }: PageProps) => {
           <SettingsForm />
         </section>
       </main>
-    </AppStateContextProvider>
+    </AuthContextProvider>
   )
 }
 

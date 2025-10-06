@@ -1,10 +1,10 @@
-import { useAppState } from '@/context/AppStateContext'
+import { useAuthContext } from '@auth/hooks/useAuth'
 import type { XeroConnection } from '@/db/schema/xeroConnections.schema'
 import type { ClientUser } from '@/lib/copilot/models/ClientUser.model'
 import { useRealtime } from '@/lib/supabase/hooks/useRealtime'
 
 export const useRealtimeXeroConnections = (user: ClientUser) => {
-  const { updateAppState } = useAppState()
+  const { updateAuth } = useAuthContext()
 
   return useRealtime<XeroConnection>(
     user.portalId,
@@ -13,7 +13,7 @@ export const useRealtimeXeroConnections = (user: ClientUser) => {
     'UPDATE',
     (payload) => {
       const newPayload = payload.new as XeroConnection
-      updateAppState({ connectionStatus: newPayload.status })
+      updateAuth({ connectionStatus: newPayload.status })
     },
   )
 }

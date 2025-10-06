@@ -1,10 +1,10 @@
 'use client'
 
+import { useAuthContext } from '@auth/hooks/useAuth'
 import { Callout } from '@/components/ui/Callout'
-import { useAppState } from '@/context/AppStateContext'
 
 export const CalloutSection = () => {
-  const { user, connectionStatus } = useAppState()
+  const { user, connectionStatus } = useAuthContext()
 
   if (!connectionStatus)
     return (
