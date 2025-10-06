@@ -25,6 +25,7 @@
       "@auth/*": ["./src/features/auth/*"],
       "@invoice-sync/*": ["./src/features/invoice-sync/*"],
       "@items-sync/*": ["./src/features/items-sync/*"],
+      "@settings/*": ["./src/features/settings/*"],
       "@webhook/*": ["./src/features/webhook/*"]
     }
   },
