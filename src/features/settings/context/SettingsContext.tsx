@@ -17,7 +17,7 @@ export type SettingsContextType = BaseSettingsContextType & {
 export const SettingsContext = createContext<
   | (SettingsContextType & {
       setSettings: React.Dispatch<React.SetStateAction<SettingsContextType>>
-      updateSettings: (state: Omit<Partial<SettingsContextType>, 'initialSettings'>) => void
+      updateSettings: (state: Partial<SettingsContextType>) => void
     })
   | null
 >(null)
