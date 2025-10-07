@@ -6,6 +6,7 @@ import type { WorkspaceResponse } from '@/lib/copilot/types'
 
 export type AuthContextType = {
   user: ClientUser
+  tenantId: string | null
   connectionStatus: boolean
   workspace: WorkspaceResponse
 }
@@ -20,12 +21,14 @@ export const AuthContext = createContext<
 
 export const AuthContextProvider = ({
   user,
+  tenantId,
   connectionStatus,
   workspace,
   children,
 }: AuthContextType & { children: ReactNode }) => {
   const [auth, setAuth] = useState<AuthContextType>({
     user,
+    tenantId,
     connectionStatus,
     workspace,
   })

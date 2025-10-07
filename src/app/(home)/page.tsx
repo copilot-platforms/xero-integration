@@ -1,14 +1,14 @@
 import { CalloutSection } from '@auth/components/CalloutSection'
 import { RealtimeXeroConnections } from '@auth/components/RealtimeXeroConnections'
+import { AuthContextProvider } from '@auth/context/AuthContext'
 import AuthService from '@auth/lib/Auth.service'
+import { SettingsForm } from '@settings/components/SettingsForm'
+import { defaultSettings } from '@settings/constants/defaults'
+import { SettingsContextProvider } from '@settings/context/SettingsContext'
+import SettingsService from '@settings/lib/Settings.service'
 import type { PageProps } from '@/app/(home)/types'
 import type { SettingsFields } from '@/db/schema/settings.schema'
 import type { XeroConnection, XeroConnectionWithTokenSet } from '@/db/schema/xeroConnections.schema'
-import { AuthContextProvider } from '@/features/auth/context/AuthContext'
-import { SettingsForm } from '@/features/settings/components/SettingsForm'
-import { defaultSettings } from '@/features/settings/constants/defaults'
-import { SettingsContextProvider } from '@/features/settings/context/SettingsContext'
-import SettingsService from '@/features/settings/lib/Settings.service'
 import { CopilotAPI } from '@/lib/copilot/CopilotAPI'
 import { serializeClientUser } from '@/lib/copilot/models/ClientUser.model'
 import User from '@/lib/copilot/models/User.model'
@@ -46,6 +46,7 @@ const Home = async ({ searchParams }: PageProps) => {
   return (
     <AuthContextProvider
       user={clientUser}
+      tenantId={connection.tenantId}
       connectionStatus={!!connection.status}
       workspace={workspace}
     >
