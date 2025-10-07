@@ -1,8 +1,8 @@
 'use client'
 
+import { useAuthContext } from '@auth/hooks/useAuth'
 import { useSettingsContext } from '@settings/hooks/useSettings'
 import { Checkbox } from 'copilot-design-system'
-import { useAuthContext } from '@/features/auth/hooks/useAuth'
 import { getWorkspaceLabel } from '@/utils/workspace'
 
 export const InvoiceDetails = () => {

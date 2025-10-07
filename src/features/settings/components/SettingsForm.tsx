@@ -1,11 +1,11 @@
 'use client'
 
+import { ConfirmSettings } from '@settings/components/ConfirmSettings'
 import { InvoiceDetails } from '@settings/components/InvoiceDetails'
 import { ProductMapping } from '@settings/components/ProductMapping'
 import { Heading } from 'copilot-design-system'
 import Divider from '@/components/layouts/Divider'
 import Accordion from '@/components/ui/Accordion'
-import { ConfirmSettings } from '@/features/settings/components/ConfirmSettings'
 
 export const SettingsForm = () => {
   return (
