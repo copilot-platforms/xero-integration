@@ -1,6 +1,6 @@
+import { ValidWebhookEvent } from '@invoice-sync/types'
 import { integer, jsonb, pgEnum, pgTable, uniqueIndex, uuid, varchar } from 'drizzle-orm/pg-core'
 import { timestamps } from '@/db/db.helpers'
-import { ValidWebhookEvent } from '@/features/invoice-sync/types'
 
 export const failedSyncTypeEnum = pgEnum('failed_syncs_type', [
   ValidWebhookEvent.InvoiceCreated,

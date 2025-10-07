@@ -1,7 +1,7 @@
+import type { ValidWebhookEvent } from '@invoice-sync/types'
 import { and, eq } from 'drizzle-orm'
 import db from '@/db'
 import { failedSyncs } from '@/db/schema/failedSyncs.schema'
-import type { ValidWebhookEvent } from '@/features/invoice-sync/types'
 import BaseService from '@/lib/copilot/services/base.service'
 
 class FailedSyncsService extends BaseService {
