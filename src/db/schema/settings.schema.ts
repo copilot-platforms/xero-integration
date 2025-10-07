@@ -1,5 +1,5 @@
 import { boolean, pgTable, uniqueIndex, uuid, varchar } from 'drizzle-orm/pg-core'
-import { createSelectSchema } from 'drizzle-zod'
+import { createSelectSchema, createUpdateSchema } from 'drizzle-zod'
 import type z from 'zod'
 import { timestamps } from '@/db/db.helpers'
 
@@ -39,3 +39,11 @@ export type SettingsFields = Omit<
   Settings,
   'id' | 'portalId' | 'tenantId' | 'createdAt' | 'updatedAt'
 >
+
+export const SettingsUpdateSchema = createUpdateSchema(settings).omit({
+  id: true,
+  portalId: true,
+  tenantId: true,
+  createdAt: true,
+  updatedAt: true,
+})
