@@ -1,5 +1,6 @@
 import 'server-only'
 
+import FailedSyncsService from '@failed-syncs/lib/FailedSyncs.service'
 import XeroInvoiceSyncService from '@invoice-sync/lib/SyncedInvoices.service'
 import {
   InvoiceCreatedEventSchema,
@@ -11,7 +12,6 @@ import {
 import SyncedItemsService from '@items-sync/lib/SyncedItems.service'
 import status from 'http-status'
 import APIError from '@/errors/APIError'
-import FailedSyncsService from '@/features/failed-syncs/lib/FailedSyncs.service'
 import logger from '@/lib/logger'
 import AuthenticatedXeroService from '@/lib/xero/AuthenticatedXero.service'
 import { type ItemUpdatePayload, ItemUpdatePayloadSchema } from '@/lib/xero/types'

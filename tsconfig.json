@@ -23,6 +23,7 @@
       "@/*": ["./src/*"],
       "@@home/*": ["./src/app/(home)/*"],
       "@auth/*": ["./src/features/auth/*"],
+      "@failed-syncs/*": ["./src/features/failed-syncs/*"],
       "@invoice-sync/*": ["./src/features/invoice-sync/*"],
       "@items-sync/*": ["./src/features/items-sync/*"],
       "@settings/*": ["./src/features/settings/*"],
