@@ -6,6 +6,7 @@ import status from 'http-status'
 import type { Item } from 'xero-node'
 import z from 'zod'
 import db from '@/db'
+import { getTableFields } from '@/db/db.helpers'
 import { syncedItems } from '@/db/schema/syncedItems.schema'
 import APIError from '@/errors/APIError'
 import logger from '@/lib/logger'
@@ -32,11 +33,7 @@ class SyncedItemsService extends AuthenticatedXeroService {
 
   async getSyncedItemsByPriceIds(priceIds: string[]) {
     return await db
-      .select({
-        productId: syncedItems.productId,
-        priceId: syncedItems.priceId,
-        itemId: syncedItems.itemId,
-      })
+      .select(getTableFields(syncedItems, ['productId', 'priceId', 'itemId']))
       .from(syncedItems)
       .where(
         and(

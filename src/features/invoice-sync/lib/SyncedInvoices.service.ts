@@ -10,6 +10,7 @@ import status from 'http-status'
 import { Invoice, type Item } from 'xero-node'
 import z from 'zod'
 import db from '@/db'
+import { getTableFields } from '@/db/db.helpers'
 import { type SyncedInvoiceCreatePayload, syncedInvoices } from '@/db/schema/syncedInvoices.schema'
 import APIError from '@/errors/APIError'
 import logger from '@/lib/logger'
@@ -162,11 +163,11 @@ class SyncedInvoicesService extends AuthenticatedXeroService {
     syncedInvoice?: Invoice,
     status?: SyncedInvoiceCreatePayload['status'], // allow db to default to 'pending'
   ) {
-    const selectFields = {
-      copilotInvoiceId: syncedInvoices.copilotInvoiceId,
-      xeroInvoiceId: syncedInvoices.xeroInvoiceId,
-      status: syncedInvoices.status,
-    } as const
+    const selectFields = getTableFields(syncedInvoices, [
+      'copilotInvoiceId',
+      'xeroInvoiceId',
+      'status',
+    ])
 
     const prevInvoices = await db
       .select(selectFields)
