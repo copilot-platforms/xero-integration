@@ -1,16 +1,21 @@
 'use client'
 
 import type { ProductMapping } from '@items-sync/types'
-import { createContext, type ReactNode, useCallback, useState } from 'react'
+import { createContext, type PropsWithChildren, useCallback, useState } from 'react'
 import type { SettingsFields } from '@/db/schema/settings.schema'
+import type { ClientXeroItem } from '@/lib/xero/types'
 
 type BaseSettingsContextType = SettingsFields & {
   productMappings: ProductMapping[]
 }
 
+type WithXeroItems = {
+  xeroItems: ClientXeroItem[]
+}
+
 export type SettingsContextType = BaseSettingsContextType & {
   initialSettings: BaseSettingsContextType
-}
+} & WithXeroItems
 
 export const SettingsContext = createContext<
   | (SettingsContextType & {
@@ -28,8 +33,9 @@ export const SettingsContextProvider = ({
   initialProductSettingsMapping,
   isSyncEnabled,
   productMappings,
+  xeroItems,
   children,
-}: BaseSettingsContextType & { children: ReactNode }) => {
+}: BaseSettingsContextType & PropsWithChildren & WithXeroItems) => {
   const [settings, setSettings] = useState<SettingsContextType>({
     syncProductsAutomatically,
     addAbsorbedFees,
@@ -38,6 +44,7 @@ export const SettingsContextProvider = ({
     initialProductSettingsMapping,
     productMappings,
     isSyncEnabled,
+    xeroItems,
 
     initialSettings: {
       syncProductsAutomatically,
@@ -50,7 +57,7 @@ export const SettingsContextProvider = ({
     },
   })
 
-  const updateSettings = useCallback((state: Partial<SettingsContextType>) => {
+  const updateSettings = useCallback((state: Omit<Partial<SettingsContextType>, 'xeroItems'>) => {
     setSettings((prev) => ({ ...prev, ...state }))
   }, [])
 

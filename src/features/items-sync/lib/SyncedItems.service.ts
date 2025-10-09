@@ -1,7 +1,6 @@
 import 'server-only'
 
 import type { PriceCreatedEvent } from '@invoice-sync/types'
-import type { ProductMapping } from '@items-sync/types'
 import { and, eq, inArray } from 'drizzle-orm'
 import status from 'http-status'
 import type { Item } from 'xero-node'
@@ -49,35 +48,6 @@ class SyncedItemsService extends AuthenticatedXeroService {
     }, {})
   }
 
-  async getProductMappings(): Promise<ProductMapping[]> {
-    const mappingRecords = await this.getSyncedItemsMapByPriceIds('all')
-    const xeroItems = await this.xero.getItemsMap(this.connection.tenantId)
-    const copilotProducts = await this.copilot.getProductsMapById('all')
-    const copilotPrices = await this.copilot.getPricesMapById('all')
-
-    const mappings = Object.values(copilotPrices)
-      // Sort by decreasing createdAt date
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-      // Map each to distinct price, product & item objs
-      .map((price) => {
-        const item = mappingRecords[price.id] && xeroItems[price.id]
-        return {
-          price,
-          product: copilotProducts[price.productId],
-          item: item && {
-            itemID: item.itemID,
-            code: item.code,
-            name: item.name,
-            amount: item.salesDetails?.unitPrice || 0,
-          },
-        }
-      })
-      // Because the list endpoint could contain data for deleted products as well, remove them!
-      .filter((obj) => obj.product)
-
-    return mappings
-  }
-
   async updateXeroItemsForProductId(
     productId: string,
     payload: ItemUpdatePayload,
@@ -111,25 +81,30 @@ class SyncedItemsService extends AuthenticatedXeroService {
     return items
   }
 
-  async createItemForPrice(price: PriceCreatedEvent): Promise<Item> {
-    const productMap = await this.copilot.getProductsMapById([price.productId])
-    const product = productMap[price.productId]
-    if (!product) {
-      throw new APIError('Could not find product for mapping', status.BAD_REQUEST)
-    }
+  async createItemsForPrices(prices: PriceCreatedEvent[]): Promise<Item[]> {
+    const createdItems: Item[] = []
 
-    const payload = {
-      code: price.id,
-      name: product.name,
-      description: htmlToText(product.description),
-      isPurchased: false,
-      salesDetails: {
-        unitPrice: price.amount / 100,
-      },
-    }
+    for (const price of prices) {
+      const productMap = await this.copilot.getProductsMapById([price.productId])
+      const product = productMap[price.productId]
+      if (!product) {
+        throw new APIError('Could not find product for mapping', status.BAD_REQUEST)
+      }
 
-    const items = await this.createItems([payload], { [price.id]: price })
-    return items[0]
+      const payload = {
+        code: price.id,
+        name: product.name,
+        description: htmlToText(product.description),
+        isPurchased: false,
+        salesDetails: {
+          unitPrice: price.amount / 100,
+        },
+      }
+
+      const items = await this.createItems([payload], { [price.id]: price })
+      createdItems.push(items[0])
+    }
+    return createdItems
   }
 }
 

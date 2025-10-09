@@ -73,7 +73,8 @@ class WebhookService extends AuthenticatedXeroService {
     const data = PriceCreatedEventSchema.parse(eventData)
 
     const syncedItemsService = new SyncedItemsService(this.user, this.connection)
-    return await syncedItemsService.createItemForPrice(data)
+    const [newPrice] = await syncedItemsService.createItemsForPrices([data])
+    return newPrice
   }
 }
 

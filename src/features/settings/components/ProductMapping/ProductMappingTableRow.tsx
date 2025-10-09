@@ -1,7 +1,7 @@
 import { useDropdown } from '@settings/hooks/useDropdown'
 import { useSettingsContext } from '@settings/hooks/useSettings'
 import { Icon } from 'copilot-design-system'
-import { produce } from 'immer'
+import type { Item } from 'xero-node'
 import type { ProductMapping } from '@/features/items-sync/types'
 
 interface ProductMappingTableRowProps {
@@ -16,14 +16,33 @@ export const ProductMappingTableRow = ({
   setOpenDropdownId,
 }: ProductMappingTableRowProps) => {
   const { dropdownRef } = useDropdown({ setOpenDropdownId })
-  const { productMappings, updateSettings } = useSettingsContext()
+  const { productMappings, updateSettings, xeroItems } = useSettingsContext()
 
   const excludeItemFromMapping = () => {
-    const newProductMappings = produce(productMappings, (draft) => {
-      const mapping = draft.find((m) => m.price.id === item.price.id)
-      if (mapping) {
-        mapping.item = null
+    const newProductMappings = productMappings.map((m) => {
+      if (m.price.id === item.price.id) {
+        return { ...m, item: null }
       }
+      return m
+    })
+    updateSettings({ productMappings: newProductMappings })
+    setOpenDropdownId(null)
+  }
+
+  const handleSelectMapping = (newItem: Item) => {
+    const newProductMappings = productMappings.map((p) => {
+      if (p.price.id === item.price.id) {
+        return {
+          ...p,
+          item: {
+            itemID: newItem.itemID,
+            name: newItem.name,
+            code: newItem.code,
+            amount: newItem.salesDetails?.unitPrice || 0,
+          },
+        }
+      }
+      return p
     })
     updateSettings({ productMappings: newProductMappings })
     setOpenDropdownId(null)
@@ -106,18 +125,19 @@ export const ProductMappingTableRow = ({
               </button>
             </div>
             <div className="max-h-56 overflow-y-auto">
-              {productMappings?.length &&
-                productMappings.map((mapping) => (
+              {xeroItems?.length &&
+                Object.values(xeroItems).map((item) => (
                   <button
                     type="button"
-                    key={mapping.price.id}
-                    className="flex w-full cursor-pointer items-center justify-between px-3 py-1.5 text-left text-sm transition-colors hover:bg-gray-100"
+                    key={item.itemID}
+                    onClick={() => handleSelectMapping(item)}
+                    className="mapping-option-btn flex w-full cursor-pointer items-center justify-between px-3 py-1.5 text-left text-sm transition-colors hover:bg-gray-100"
                   >
                     <span className="line-clamp-1 break-all text-gray-600 lg:break-normal">
-                      {mapping.product.name}
+                      {item.name}
                     </span>
                     <span className="text-body-micro text-gray-500 leading-body-micro">
-                      {mapping.price.amount}
+                      {item.amount}
                     </span>
                   </button>
                 ))}

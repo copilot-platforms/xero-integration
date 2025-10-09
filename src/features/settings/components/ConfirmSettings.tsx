@@ -4,6 +4,7 @@ import { useAuthContext } from '@auth/hooks/useAuth'
 import { updateSettingsAction } from '@settings/actions/settings'
 import { useSettingsContext } from '@settings/hooks/useSettings'
 import { Button } from 'copilot-design-system'
+import { updateSyncedItemsAction } from '../actions/syncedItems'
 
 interface ConfirmSettingsProps {
   mode: 'product' | 'invoice'
@@ -15,6 +16,7 @@ export const ConfirmSettings = ({ mode }: ConfirmSettingsProps) => {
     initialProductSettingsMapping,
     initialInvoiceSettingsMapping,
     syncProductsAutomatically,
+    productMappings,
     addAbsorbedFees,
     useCompanyName,
     updateSettings,
@@ -42,11 +44,33 @@ export const ConfirmSettings = ({ mode }: ConfirmSettingsProps) => {
 
     if (!tenantId) return null
 
-    const payload =
-      mode === 'product' ? { syncProductsAutomatically } : { addAbsorbedFees, useCompanyName }
+    // Apply confirm action for Product section of the form
+    if (mode === 'product') {
+      const [newSettings, _newMappings] = await Promise.all([
+        updateSettingsAction(user.token, tenantId, { syncProductsAutomatically }),
+        updateSyncedItemsAction(user.token, tenantId, productMappings),
+      ])
+      updateSettings({
+        initialSettings: {
+          ...initialSettings,
+          ...newSettings,
+          productMappings: productMappings,
+        },
+      })
+      return
+    }
 
-    const newValues = await updateSettingsAction(user.token, tenantId, payload)
-    updateSettings({ initialSettings: newValues })
+    // Apply confirm action for Invoice section of the form
+    const newSettings = await updateSettingsAction(user.token, tenantId, {
+      addAbsorbedFees,
+      useCompanyName,
+    })
+    updateSettings({
+      initialSettings: {
+        ...initialSettings,
+        ...newSettings,
+      },
+    })
   }
 
   const stopPropagation = (e: React.MouseEvent) => e.stopPropagation()

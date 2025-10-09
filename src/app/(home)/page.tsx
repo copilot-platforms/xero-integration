@@ -10,11 +10,11 @@ import { cache } from 'react'
 import type { PageProps } from '@/app/(home)/types'
 import type { SettingsFields } from '@/db/schema/settings.schema'
 import type { XeroConnection, XeroConnectionWithTokenSet } from '@/db/schema/xeroConnections.schema'
-import SyncedItemsService from '@/features/items-sync/lib/SyncedItems.service'
-import type { ProductMapping } from '@/features/items-sync/types'
+import ProductMappingsService from '@/features/settings/lib/ProductMappings.service'
 import { CopilotAPI } from '@/lib/copilot/CopilotAPI'
 import { serializeClientUser } from '@/lib/copilot/models/ClientUser.model'
 import User from '@/lib/copilot/models/User.model'
+import type { ClientXeroItem } from '@/lib/xero/types'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -34,11 +34,24 @@ const getSettings = cache(async (user: User, connection: XeroConnection) => {
 const getProductMappings = async (
   user: User,
   connection: XeroConnection,
-): Promise<ProductMapping[]> => {
+): ReturnType<ProductMappingsService['getProductMappings']> => {
   if (!connection.tenantId) return []
 
-  const syncedItemsService = new SyncedItemsService(user, connection as XeroConnectionWithTokenSet)
-  return await syncedItemsService.getProductMappings()
+  const productMappingsService = new ProductMappingsService(
+    user,
+    connection as XeroConnectionWithTokenSet,
+  )
+  return await productMappingsService.getProductMappings()
+}
+
+const getXeroItems = async (user: User, connection: XeroConnection): Promise<ClientXeroItem[]> => {
+  if (!connection.tenantId) return []
+
+  const productMappingsService = new ProductMappingsService(
+    user,
+    connection as XeroConnectionWithTokenSet,
+  )
+  return await productMappingsService.getClientXeroItems()
 }
 
 const Home = async ({ searchParams }: PageProps) => {
@@ -54,9 +67,10 @@ const Home = async ({ searchParams }: PageProps) => {
 
   const clientUser = serializeClientUser(user)
 
-  const [settings, productMappings] = await Promise.all([
+  const [settings, productMappings, xeroItems] = await Promise.all([
     getSettings(user, connection),
     getProductMappings(user, connection),
+    getXeroItems(user, connection),
   ])
 
   return (
@@ -66,7 +80,11 @@ const Home = async ({ searchParams }: PageProps) => {
       connectionStatus={!!connection.status}
       workspace={workspace}
     >
-      <SettingsContextProvider {...settings} productMappings={productMappings}>
+      <SettingsContextProvider
+        {...settings}
+        productMappings={productMappings}
+        xeroItems={xeroItems}
+      >
         <main className="min-h-[100vh] px-8 pt-6 pb-[54px] sm:px-[100px] lg:px-[220px]">
           <RealtimeXeroConnections user={clientUser} />
           <CalloutSection />
