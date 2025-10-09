@@ -1,6 +1,7 @@
 import 'server-only'
 
 import type { PriceCreatedEvent } from '@invoice-sync/types'
+import type { ProductMapping } from '@items-sync/types'
 import { and, eq, inArray } from 'drizzle-orm'
 import status from 'http-status'
 import type { Item } from 'xero-node'
@@ -31,17 +32,50 @@ class SyncedItemsService extends AuthenticatedXeroService {
     return newlyCreatedItems
   }
 
-  async getSyncedItemsByPriceIds(priceIds: string[]) {
-    return await db
+  async getSyncedItemsMapByPriceIds(priceIds: string[] | 'all') {
+    const dbMappings = await db
       .select(getTableFields(syncedItems, ['productId', 'priceId', 'itemId']))
       .from(syncedItems)
       .where(
         and(
           eq(syncedItems.portalId, this.user.portalId),
           eq(syncedItems.tenantId, this.connection.tenantId),
-          inArray(syncedItems.priceId, priceIds),
+          priceIds === 'all' ? undefined : inArray(syncedItems.priceId, priceIds),
         ),
       )
+    return dbMappings.reduce<Record<string, (typeof dbMappings)[0]>>((acc, mapping) => {
+      acc[mapping.priceId] = mapping
+      return acc
+    }, {})
+  }
+
+  async getProductMappings(): Promise<ProductMapping[]> {
+    const mappingRecords = await this.getSyncedItemsMapByPriceIds('all')
+    const xeroItems = await this.xero.getItemsMap(this.connection.tenantId)
+    const copilotProducts = await this.copilot.getProductsMapById('all')
+    const copilotPrices = await this.copilot.getPricesMapById('all')
+
+    const mappings = Object.values(copilotPrices)
+      // Sort by decreasing createdAt date
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      // Map each to distinct price, product & item objs
+      .map((price) => {
+        const item = mappingRecords[price.id] && xeroItems[price.id]
+        return {
+          price,
+          product: copilotProducts[price.productId],
+          item: item && {
+            itemID: item.itemID,
+            code: item.code,
+            name: item.name,
+            amount: item.salesDetails?.unitPrice || 0,
+          },
+        }
+      })
+      // Because the list endpoint could contain data for deleted products as well, remove them!
+      .filter((obj) => obj.product)
+
+    return mappings
   }
 
   async updateXeroItemsForProductId(
@@ -78,7 +112,7 @@ class SyncedItemsService extends AuthenticatedXeroService {
   }
 
   async createItemForPrice(price: PriceCreatedEvent): Promise<Item> {
-    const productMap = await this.copilot.getProductsById([price.productId])
+    const productMap = await this.copilot.getProductsMapById([price.productId])
     const product = productMap[price.productId]
     if (!product) {
       throw new APIError('Could not find product for mapping', status.BAD_REQUEST)

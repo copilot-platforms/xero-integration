@@ -1,8 +1,8 @@
 'use client'
 
+import type { ProductMapping } from '@items-sync/types'
 import { createContext, type ReactNode, useCallback, useState } from 'react'
 import type { SettingsFields } from '@/db/schema/settings.schema'
-import type { ProductMapping } from '@/features/items-sync/types'
 
 type BaseSettingsContextType = SettingsFields & {
   productMappings?: ProductMapping[]
