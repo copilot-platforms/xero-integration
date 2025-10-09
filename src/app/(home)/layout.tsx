@@ -9,8 +9,8 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: 'Copilot Xero Integration',
-  description: 'Sync Copilot invoices with Xero effortlessly',
+  title: 'Assembly Xero Integration',
+  description: 'Sync Assembly invoices with Xero effortlessly',
 }
 
 export default function RootLayout({
