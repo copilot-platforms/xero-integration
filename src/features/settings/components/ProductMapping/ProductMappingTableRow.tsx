@@ -1,7 +1,8 @@
 import { useDropdown } from '@settings/hooks/useDropdown'
+import { useSettingsContext } from '@settings/hooks/useSettings'
 import { Icon } from 'copilot-design-system'
+import { produce } from 'immer'
 import type { ProductMapping } from '@/features/items-sync/types'
-import { useSettingsContext } from '../../hooks/useSettings'
 
 interface ProductMappingTableRowProps {
   item: ProductMapping
@@ -15,11 +16,18 @@ export const ProductMappingTableRow = ({
   setOpenDropdownId,
 }: ProductMappingTableRowProps) => {
   const { dropdownRef } = useDropdown({ setOpenDropdownId })
-  const { productMappings } = useSettingsContext()
+  const { productMappings, updateSettings } = useSettingsContext()
 
-  // const excludeItemFromMapping = () => {
-  //   updateSettings()
-  // }
+  const excludeItemFromMapping = () => {
+    const newProductMappings = produce(productMappings, (draft) => {
+      const mapping = draft.find((m) => m.price.id === item.price.id)
+      if (mapping) {
+        mapping.item = null
+      }
+    })
+    updateSettings({ productMappings: newProductMappings })
+    setOpenDropdownId(null)
+  }
 
   const renderUSD = (amount: number) =>
     new Intl.NumberFormat('en-US', {
@@ -92,7 +100,7 @@ export const ProductMappingTableRow = ({
               <button
                 type="button"
                 className="h-full w-full cursor-pointer px-3 py-2 text-left text-gray-600 text-sm"
-                onClick={() => null}
+                onClick={excludeItemFromMapping}
               >
                 Exclude from mapping
               </button>
