@@ -5,7 +5,7 @@ import { createContext, type ReactNode, useCallback, useState } from 'react'
 import type { SettingsFields } from '@/db/schema/settings.schema'
 
 type BaseSettingsContextType = SettingsFields & {
-  productMappings?: ProductMapping[]
+  productMappings: ProductMapping[]
 }
 
 export type SettingsContextType = BaseSettingsContextType & {

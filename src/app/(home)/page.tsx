@@ -2,7 +2,6 @@ import { CalloutSection } from '@auth/components/CalloutSection'
 import { RealtimeXeroConnections } from '@auth/components/RealtimeXeroConnections'
 import { AuthContextProvider } from '@auth/context/AuthContext'
 import AuthService from '@auth/lib/Auth.service'
-import { ProductMappingsFetcher } from '@settings/components/fetchers/ProductMappingsFetcher'
 import { SettingsForm } from '@settings/components/SettingsForm'
 import { defaultSettings } from '@settings/constants/defaults'
 import { SettingsContextProvider } from '@settings/context/SettingsContext'
@@ -11,6 +10,8 @@ import { cache } from 'react'
 import type { PageProps } from '@/app/(home)/types'
 import type { SettingsFields } from '@/db/schema/settings.schema'
 import type { XeroConnection, XeroConnectionWithTokenSet } from '@/db/schema/xeroConnections.schema'
+import SyncedItemsService from '@/features/items-sync/lib/SyncedItems.service'
+import type { ProductMapping } from '@/features/items-sync/types'
 import { CopilotAPI } from '@/lib/copilot/CopilotAPI'
 import { serializeClientUser } from '@/lib/copilot/models/ClientUser.model'
 import User from '@/lib/copilot/models/User.model'
@@ -30,6 +31,16 @@ const getSettings = cache(async (user: User, connection: XeroConnection) => {
   return settings
 })
 
+const getProductMappings = async (
+  user: User,
+  connection: XeroConnection,
+): Promise<ProductMapping[]> => {
+  if (!connection.tenantId) return []
+
+  const syncedItemsService = new SyncedItemsService(user, connection as XeroConnectionWithTokenSet)
+  return await syncedItemsService.getProductMappings()
+}
+
 const Home = async ({ searchParams }: PageProps) => {
   const sp = await searchParams
   const user = await User.authenticate(sp.token)
@@ -43,7 +54,10 @@ const Home = async ({ searchParams }: PageProps) => {
 
   const clientUser = serializeClientUser(user)
 
-  const settings = await getSettings(user, connection)
+  const [settings, productMappings] = await Promise.all([
+    getSettings(user, connection),
+    getProductMappings(user, connection),
+  ])
 
   return (
     <AuthContextProvider
@@ -52,9 +66,7 @@ const Home = async ({ searchParams }: PageProps) => {
       connectionStatus={!!connection.status}
       workspace={workspace}
     >
-      <SettingsContextProvider {...settings}>
-        <ProductMappingsFetcher user={user} connection={connection} />
-
+      <SettingsContextProvider {...settings} productMappings={productMappings}>
         <main className="min-h-[100vh] px-8 pt-6 pb-[54px] sm:px-[100px] lg:px-[220px]">
           <RealtimeXeroConnections user={clientUser} />
           <CalloutSection />
