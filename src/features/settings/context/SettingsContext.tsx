@@ -1,13 +1,11 @@
 'use client'
 
-import { createContext, type ReactNode, useState } from 'react'
+import { createContext, type ReactNode, useCallback, useState } from 'react'
+import type { SettingsFields } from '@/db/schema/settings.schema'
+import type { ProductMapping } from '@/features/items-sync/types'
 
-type BaseSettingsContextType = {
-  syncProductsAutomatically: boolean
-  addAbsorbedFees: boolean
-  useCompanyName: boolean
-  initialInvoiceSettingsMapping: boolean
-  initialProductSettingsMapping: boolean
+type BaseSettingsContextType = SettingsFields & {
+  productMappings?: ProductMapping[]
 }
 
 export type SettingsContextType = BaseSettingsContextType & {
@@ -28,6 +26,8 @@ export const SettingsContextProvider = ({
   useCompanyName,
   initialInvoiceSettingsMapping,
   initialProductSettingsMapping,
+  isSyncEnabled,
+  productMappings,
   children,
 }: BaseSettingsContextType & { children: ReactNode }) => {
   const [settings, setSettings] = useState<SettingsContextType>({
@@ -36,23 +36,30 @@ export const SettingsContextProvider = ({
     useCompanyName,
     initialInvoiceSettingsMapping,
     initialProductSettingsMapping,
+    productMappings,
+    isSyncEnabled,
+
     initialSettings: {
       syncProductsAutomatically,
       addAbsorbedFees,
       useCompanyName,
       initialInvoiceSettingsMapping,
       initialProductSettingsMapping,
+      isSyncEnabled,
+      productMappings,
     },
   })
+
+  const updateSettings = useCallback((state: Partial<SettingsContextType>) => {
+    setSettings((prev) => ({ ...prev, ...state }))
+  }, [])
 
   return (
     <SettingsContext.Provider
       value={{
         ...settings,
         setSettings,
-        updateSettings: (state) => {
-          setSettings({ ...settings, ...state })
-        },
+        updateSettings,
       }}
     >
       {children}
