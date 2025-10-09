@@ -137,6 +137,21 @@ class XeroAPI {
     return newTaxRate
   }
 
+  async getItems(tenantId: string): Promise<Item[]> {
+    const { body } = await this.xero.accountingApi.getItems(tenantId)
+    return body.items || []
+  }
+
+  async getItemsMap(tenantId: string): Promise<Record<string, Item>> {
+    const { body } = await this.xero.accountingApi.getItems(tenantId)
+    const items = body.items || []
+
+    return items.reduce<Record<string, Item>>((acc, item) => {
+      acc[z.string().parse(item.code)] = item
+      return acc
+    }, {})
+  }
+
   async createItems(tenantId: string, items: Item[]): Promise<Item[]> {
     if (!items.length) return []
 

@@ -98,12 +98,15 @@ class SyncedInvoicesService extends AuthenticatedXeroService {
       item.productId && lineProductIds.push(item.productId)
       item.priceId && linePriceIds.push(item.priceId)
     }
-    const products = await this.copilot.getProductsById(lineProductIds)
-    const prices = await this.copilot.getPricesById(linePriceIds)
+    const products = await this.copilot.getProductsMapById(lineProductIds)
+    const prices = await this.copilot.getPricesMapById(linePriceIds)
 
     // Get all synced items from db
     const syncedItemsService = new SyncedItemsService(this.user, this.connection)
-    const syncedXeroItems = await syncedItemsService.getSyncedItemsByPriceIds(Object.keys(prices))
+    const syncedXeroItems = await syncedItemsService.getSyncedItemsMapByPriceIds(
+      Object.keys(prices),
+    )
+
     // Object with key as priceId (guarenteed to be unique), and value as xero item
     const syncedXeroItemsMap: Record<string, string> = {}
 
@@ -124,9 +127,7 @@ class SyncedInvoicesService extends AuthenticatedXeroService {
       )
 
       // CASE II: For line item with productId & priceId, if synced product exists use it
-      const syncedRecord = syncedXeroItems.find(
-        (i) => i.productId === item.productId && i.priceId === item.priceId,
-      )
+      const syncedRecord = syncedXeroItems[item.priceId]
       if (syncedRecord) {
         syncedXeroItemsMap[copilotPrice.id] = syncedRecord.itemId
       } else {

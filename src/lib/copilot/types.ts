@@ -168,5 +168,6 @@ export const CopilotPriceSchema = z.object({
   amount: z.number().nonnegative(),
   currency: z.string(),
   productId: z.string(),
+  createdAt: z.string(),
 })
 export type CopilotPrice = z.infer<typeof CopilotPriceSchema>

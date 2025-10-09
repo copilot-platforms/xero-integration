@@ -2,10 +2,12 @@ import { CalloutSection } from '@auth/components/CalloutSection'
 import { RealtimeXeroConnections } from '@auth/components/RealtimeXeroConnections'
 import { AuthContextProvider } from '@auth/context/AuthContext'
 import AuthService from '@auth/lib/Auth.service'
+import { ProductMappingsFetcher } from '@settings/components/fetchers/ProductMappingsFetcher'
 import { SettingsForm } from '@settings/components/SettingsForm'
 import { defaultSettings } from '@settings/constants/defaults'
 import { SettingsContextProvider } from '@settings/context/SettingsContext'
 import SettingsService from '@settings/lib/Settings.service'
+import { cache } from 'react'
 import type { PageProps } from '@/app/(home)/types'
 import type { SettingsFields } from '@/db/schema/settings.schema'
 import type { XeroConnection, XeroConnectionWithTokenSet } from '@/db/schema/xeroConnections.schema'
@@ -16,7 +18,7 @@ import User from '@/lib/copilot/models/User.model'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
-const getSettings = async (user: User, connection: XeroConnection) => {
+const getSettings = cache(async (user: User, connection: XeroConnection) => {
   let settings: SettingsFields
   if (connection.tenantId) {
     // Using tenantID even though tokenSet might be expired because the sync-settings feature don't need to perform Xero API calls
@@ -26,7 +28,7 @@ const getSettings = async (user: User, connection: XeroConnection) => {
     settings = defaultSettings
   }
   return settings
-}
+})
 
 const Home = async ({ searchParams }: PageProps) => {
   const sp = await searchParams
@@ -51,6 +53,8 @@ const Home = async ({ searchParams }: PageProps) => {
       workspace={workspace}
     >
       <SettingsContextProvider {...settings}>
+        <ProductMappingsFetcher user={user} connection={connection} />
+
         <main className="min-h-[100vh] px-8 pt-6 pb-[54px] sm:px-[100px] lg:px-[220px]">
           <RealtimeXeroConnections user={clientUser} />
           <CalloutSection />
