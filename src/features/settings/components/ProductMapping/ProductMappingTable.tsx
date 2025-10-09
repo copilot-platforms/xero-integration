@@ -1,15 +1,16 @@
 'use client'
 
-import type SyncedItemsService from '@items-sync/lib/SyncedItems.service'
+import { ProductMappingTableRow } from '@settings/components/ProductMapping/ProductMappingTableRow'
 import { Icon } from 'copilot-design-system'
-import { ProductMappingTableRow } from './ProductMappingTableRow'
+import { useState } from 'react'
+import type { ProductMapping } from '@/features/items-sync/types'
 
 interface ProductMappingTableProps {
-  items?: Awaited<ReturnType<SyncedItemsService['getProductMappings']>>
+  items: ProductMapping[]
 }
 
 export const ProductMappingTable = ({ items }: ProductMappingTableProps) => {
-  if (!items) return <div>Loading...</div>
+  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null)
 
   return (
     <div className="product-mapping-table mt-5 border border-gray-200 bg-white text-left">
@@ -33,7 +34,14 @@ export const ProductMappingTable = ({ items }: ProductMappingTableProps) => {
 
         <tbody className="divide-y divide-gray-200">
           {items.length ? (
-            items.map((item) => <ProductMappingTableRow key={item.price.id} item={item} />)
+            items.map((item) => (
+              <ProductMappingTableRow
+                key={item.price.id}
+                item={item}
+                openDropdownId={openDropdownId}
+                setOpenDropdownId={setOpenDropdownId}
+              />
+            ))
           ) : (
             <tr className="text-center">
               <td colSpan={3} className="py-11">
