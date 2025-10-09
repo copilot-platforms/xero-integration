@@ -142,14 +142,14 @@ export class CopilotAPI {
    * @param productIds Products to get details for
    */
   async _getProducts(
-    productIds: string[],
+    productIds: string[] | 'all',
     args: CopilotListArgs = { limit: MAX_FETCH_COPILOT_RESOURCES },
   ): Promise<Record<string, CopilotProduct>> {
     const allProductsResponse = await this.copilot.listProducts(args)
     const allProducts = z.array(CopilotProductSchema).parse(allProductsResponse.data)
 
     return allProducts.reduce<Record<string, CopilotProduct>>((acc, product) => {
-      if (productIds.includes(product.id)) {
+      if (productIds === 'all' || productIds.includes(product.id)) {
         acc[product.id] = product
       }
       return acc
@@ -161,13 +161,14 @@ export class CopilotAPI {
    * @param priceIds Prices to get details for
    */
   async _getPrices(
-    priceIds: string[],
+    priceIds: string[] | 'all',
     args = { limit: '10_000' },
   ): Promise<Record<string, CopilotPrice>> {
     const allPricesResponse = await this.copilot.listPrices(args)
     const allPrices = z.array(CopilotPriceSchema).parse(allPricesResponse.data)
+
     return allPrices.reduce<Record<string, CopilotPrice>>((acc, price) => {
-      if (priceIds.includes(price.id)) {
+      if (priceIds === 'all' || priceIds.includes(price.id)) {
         acc[price.id] = price
       }
       return acc
@@ -195,6 +196,6 @@ export class CopilotAPI {
   getInternalUsers = this.wrapWithRetry(this._getInternalUsers)
   getInternalUser = this.wrapWithRetry(this._getInternalUser)
   createNotification = this.wrapWithRetry(this._createNotification)
-  getProductsById = this.wrapWithRetry(this._getProducts)
-  getPricesById = this.wrapWithRetry(this._getPrices)
+  getProductsMapById = this.wrapWithRetry(this._getProducts)
+  getPricesMapById = this.wrapWithRetry(this._getPrices)
 }
