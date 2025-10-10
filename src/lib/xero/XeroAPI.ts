@@ -147,7 +147,7 @@ class XeroAPI {
     const items = body.items || []
 
     return items.reduce<Record<string, Item>>((acc, item) => {
-      acc[z.string().parse(item.code)] = item
+      acc[z.string().parse(item.itemID)] = item
       return acc
     }, {})
   }
@@ -170,6 +170,10 @@ class XeroAPI {
       throw new APIError('Unable to update item', status.INTERNAL_SERVER_ERROR)
     }
     return updatedItem
+  }
+
+  async deleteItem(tenantId: string, itemID: string): Promise<void> {
+    await this.xero.accountingApi.deleteItem(tenantId, itemID)
   }
 }
 

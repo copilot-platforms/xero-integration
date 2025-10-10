@@ -2,9 +2,12 @@
 
 import { useAuthContext } from '@auth/hooks/useAuth'
 import { updateSettingsAction } from '@settings/actions/settings'
+import { updateSyncedItemsAction } from '@settings/actions/syncedItems'
+import type { SettingsContextType } from '@settings/context/SettingsContext'
 import { useSettingsContext } from '@settings/hooks/useSettings'
 import { Button } from 'copilot-design-system'
-import { updateSyncedItemsAction } from '../actions/syncedItems'
+import isDeepEqual from 'deep-equal'
+import { useState } from 'react'
 
 interface ConfirmSettingsProps {
   mode: 'product' | 'invoice'
@@ -24,11 +27,14 @@ export const ConfirmSettings = ({ mode }: ConfirmSettingsProps) => {
 
   const { user, tenantId } = useAuthContext()
 
+  const [isPending, setIsPending] = useState(false)
+
   const [initialMapping, showButtons] =
     mode === 'product'
       ? [
           initialProductSettingsMapping,
-          syncProductsAutomatically !== initialSettings.syncProductsAutomatically,
+          syncProductsAutomatically !== initialSettings.syncProductsAutomatically ||
+            !isDeepEqual(productMappings, initialSettings.productMappings),
         ]
       : [
           initialInvoiceSettingsMapping,
@@ -36,53 +42,82 @@ export const ConfirmSettings = ({ mode }: ConfirmSettingsProps) => {
             useCompanyName !== initialSettings.useCompanyName,
         ]
 
-  if (!showButtons) return null
-
   const onConfirm = async (e: React.MouseEvent) => {
     e.stopPropagation()
     e.preventDefault()
 
     if (!tenantId) return null
 
-    // Apply confirm action for Product section of the form
-    if (mode === 'product') {
-      const [newSettings, _newMappings] = await Promise.all([
-        updateSettingsAction(user.token, tenantId, { syncProductsAutomatically }),
-        updateSyncedItemsAction(user.token, tenantId, productMappings),
-      ])
-      updateSettings({
-        initialSettings: {
-          ...initialSettings,
-          ...newSettings,
-          productMappings: productMappings,
-        },
-      })
-      return
+    setIsPending(true)
+    try {
+      // --- Apply confirm action for Product section of the form
+      if (mode === 'product') {
+        const [newSettings, newMappings] = await Promise.all([
+          updateSettingsAction(user.token, { syncProductsAutomatically }),
+          updateSyncedItemsAction(user.token, productMappings),
+        ])
+        updateSettings({
+          initialSettings: {
+            ...initialSettings,
+            ...newSettings,
+            productMappings: newMappings,
+          },
+        })
+      } else {
+        // --- Apply confirm action for Invoice section of the form
+        const newSettings = await updateSettingsAction(user.token, {
+          addAbsorbedFees,
+          useCompanyName,
+        })
+        updateSettings({
+          initialSettings: {
+            ...initialSettings,
+            ...newSettings,
+          },
+        })
+      }
+    } catch (e) {
+      // We can dispatch an error toast here
+      console.error(e)
+    } finally {
+      setIsPending(false)
     }
-
-    // Apply confirm action for Invoice section of the form
-    const newSettings = await updateSettingsAction(user.token, tenantId, {
-      addAbsorbedFees,
-      useCompanyName,
-    })
-    updateSettings({
-      initialSettings: {
-        ...initialSettings,
-        ...newSettings,
-      },
-    })
   }
 
-  const stopPropagation = (e: React.MouseEvent) => e.stopPropagation()
+  const onCancel = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    e.preventDefault()
+    const resetPayload: Partial<SettingsContextType> =
+      mode === 'product'
+        ? {
+            syncProductsAutomatically: initialSettings.syncProductsAutomatically,
+            productMappings: initialSettings.productMappings,
+          }
+        : {
+            addAbsorbedFees: initialSettings.addAbsorbedFees,
+            useCompanyName: initialSettings.useCompanyName,
+          }
+    updateSettings(resetPayload)
+  }
+
+  if (!showButtons) return null
 
   return (
     <div className="flex max-h-6 items-center justify-end">
-      <Button label="Cancel" variant="text" className="me-2" onMouseUp={stopPropagation} />
+      <Button
+        label="Cancel"
+        type="reset"
+        variant="text"
+        className="me-2"
+        onMouseUp={onCancel}
+        disabled={isPending}
+      />
       <Button
         label={initialMapping ? 'Update Setting' : 'Confirm'}
         variant="primary"
         prefixIcon="Check"
         onMouseUp={onConfirm}
+        disabled={isPending}
       />
     </div>
   )

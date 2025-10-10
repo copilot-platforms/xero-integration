@@ -44,12 +44,12 @@ export const ProductMappingTable = ({ items }: ProductMappingTableProps) => {
             ))
           ) : (
             <tr className="text-center">
-              <td colSpan={3} className="py-11">
+              <td colSpan={3} className="py-11 text-sm text-text-primary leading-[22px]">
                 Start by creating a product in Assembly.
                 <button
                   type="button"
                   onClick={() => null}
-                  className="ms-2 cursor-pointer text-blue-300"
+                  className="ms-2 cursor-pointer text-text-link"
                 >
                   Create Product
                 </button>

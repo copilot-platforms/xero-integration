@@ -1,8 +1,8 @@
 import { useDropdown } from '@settings/hooks/useDropdown'
 import { useSettingsContext } from '@settings/hooks/useSettings'
 import { Icon } from 'copilot-design-system'
-import type { Item } from 'xero-node'
 import type { ProductMapping } from '@/features/items-sync/types'
+import type { ClientXeroItem } from '@/lib/xero/types'
 
 interface ProductMappingTableRowProps {
   item: ProductMapping
@@ -18,6 +18,8 @@ export const ProductMappingTableRow = ({
   const { dropdownRef } = useDropdown({ setOpenDropdownId })
   const { productMappings, updateSettings, xeroItems } = useSettingsContext()
 
+  const xeroItem = xeroItems.find((i) => i.itemID === item.item?.itemID)
+
   const excludeItemFromMapping = () => {
     const newProductMappings = productMappings.map((m) => {
       if (m.price.id === item.price.id) {
@@ -29,7 +31,7 @@ export const ProductMappingTableRow = ({
     setOpenDropdownId(null)
   }
 
-  const handleSelectMapping = (newItem: Item) => {
+  const handleSelectMapping = (newItem: ClientXeroItem) => {
     const newProductMappings = productMappings.map((p) => {
       if (p.price.id === item.price.id) {
         return {
@@ -38,7 +40,7 @@ export const ProductMappingTableRow = ({
             itemID: newItem.itemID,
             name: newItem.name,
             code: newItem.code,
-            amount: newItem.salesDetails?.unitPrice || 0,
+            amount: newItem.amount,
           },
         }
       }
@@ -52,17 +54,17 @@ export const ProductMappingTableRow = ({
     new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
-    }).format((amount || 0) / 100)
+    }).format(amount || 0)
 
   return (
     <tr key={item.price.id} className="transition-colors">
       {/* Assembly Products Column */}
-      <td className="py-2 pr-3 pl-4">
+      <td className="py-2 pr-3 pl-4" id={`price-id-${item.price.id}`}>
         <div className="break-all text-sm text-text-primary leading-5 lg:break-normal">
           {item.product.name}
         </div>
         <div className="text-body-xs text-text-secondary leading-5">
-          {renderUSD(item.price.amount)}
+          {renderUSD(item.price.amount / 100)}
         </div>
       </td>
 
@@ -72,7 +74,11 @@ export const ProductMappingTableRow = ({
       </td>
 
       {/* Xero Items Column */}
-      <td className="relative border-gray-200 border-l bg-gray-100 hover:bg-gray-150">
+      <td
+        className="relative border-gray-200 border-l bg-gray-100 hover:bg-gray-150"
+        id={`item-id-${xeroItem?.itemID || `unmapped-${crypto.randomUUID()}`}`}
+        suppressHydrationWarning
+      >
         <button
           type="button"
           onClick={() =>
@@ -81,13 +87,13 @@ export const ProductMappingTableRow = ({
           className="mapping-btn grid h-full w-full grid-cols-6 py-2 pr-3 pl-4 transition-colors md:grid-cols-14"
         >
           <div className="col-span-5 text-left md:col-span-13">
-            {item.item ? (
+            {xeroItem ? (
               <div className="text-left">
                 <div className="break-all text-sm text-text-primary leading-5 lg:break-normal">
-                  {item.item.name}
+                  {xeroItem.name}
                 </div>
                 <div className="text-body-xs text-text-secondary leading-5">
-                  {renderUSD(item.price.amount)}
+                  {renderUSD(xeroItem.amount)}
                 </div>
               </div>
             ) : (
@@ -137,7 +143,7 @@ export const ProductMappingTableRow = ({
                       {item.name}
                     </span>
                     <span className="text-body-micro text-gray-500 leading-body-micro">
-                      {item.amount}
+                      {renderUSD(item.amount)}
                     </span>
                   </button>
                 ))}
