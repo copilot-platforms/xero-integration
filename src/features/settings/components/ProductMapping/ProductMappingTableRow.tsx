@@ -3,6 +3,7 @@ import { useSettingsContext } from '@settings/hooks/useSettings'
 import { Icon } from 'copilot-design-system'
 import type { ProductMapping } from '@/features/items-sync/types'
 import type { ClientXeroItem } from '@/lib/xero/types'
+import { genRandomString } from '@/utils/string'
 
 interface ProductMappingTableRowProps {
   item: ProductMapping
@@ -39,7 +40,7 @@ export const ProductMappingTableRow = ({
           item: {
             itemID: newItem.itemID,
             name: newItem.name,
-            code: newItem.code,
+            code: genRandomString(10),
             amount: newItem.amount,
           },
         }

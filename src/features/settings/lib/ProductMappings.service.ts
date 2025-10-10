@@ -6,6 +6,7 @@ import { type SyncedItem, syncedItems } from '@/db/schema/syncedItems.schema'
 import SyncedItemsService from '@/features/items-sync/lib/SyncedItems.service'
 import AuthenticatedXeroService from '@/lib/xero/AuthenticatedXero.service'
 import type { ClientXeroItem } from '@/lib/xero/types'
+import { genRandomString } from '@/utils/string'
 
 /**
  * ProductMappingsService is a child class of SyncedItemsService that deals specifically with manually Synced items
@@ -42,7 +43,7 @@ class ProductMappingsService extends AuthenticatedXeroService {
           item: item
             ? {
                 itemID: item.itemID,
-                code: item.code,
+                code: genRandomString(10),
                 name: item.name,
                 amount: item.salesDetails?.unitPrice || 0,
               }

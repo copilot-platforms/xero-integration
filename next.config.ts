@@ -2,7 +2,7 @@ import type { NextConfig } from 'next'
 
 const nextConfig = {
   // Ngrok tunnel for local dev testing (roj)
-  allowedDevOrigins: ['dominant-deadly-narwhal.ngrok-free.app'],
+  allowedDevOrigins: ['https://overabusive-luba-carryable.ngrok-free.dev'],
   // biome-ignore lint/suspicious/useAwait: `headers` needs to be async
   headers: async () => {
     return [
