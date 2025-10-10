@@ -13,6 +13,7 @@ import logger from '@/lib/logger'
 import AuthenticatedXeroService from '@/lib/xero/AuthenticatedXero.service'
 import type { ItemUpdatePayload } from '@/lib/xero/types'
 import { htmlToText } from '@/utils/html'
+import { genRandomString } from '@/utils/string'
 import type { Mappable } from '../types'
 
 class SyncedItemsService extends AuthenticatedXeroService {
@@ -96,7 +97,7 @@ class SyncedItemsService extends AuthenticatedXeroService {
       }
 
       const payload = {
-        code: price.id,
+        code: genRandomString(10),
         name: product.name,
         description: htmlToText(product.description),
         isPurchased: false,
