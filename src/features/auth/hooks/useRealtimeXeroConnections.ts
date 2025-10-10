@@ -4,7 +4,7 @@ import type { ClientUser } from '@/lib/copilot/models/ClientUser.model'
 import { useRealtime } from '@/lib/supabase/hooks/useRealtime'
 
 export const useRealtimeXeroConnections = (user: ClientUser) => {
-  const { updateAuth } = useAuthContext()
+  const { connectionStatus } = useAuthContext()
 
   return useRealtime<XeroConnection>(
     user.portalId,
@@ -12,8 +12,13 @@ export const useRealtimeXeroConnections = (user: ClientUser) => {
     `portal_id=eq.${user.portalId}`,
     'UPDATE',
     (payload) => {
-      const newPayload = payload.new as XeroConnection
-      updateAuth({ connectionStatus: newPayload.status })
+      if (connectionStatus === (payload.new as XeroConnection).status) {
+        console.info('Skipping auth event...')
+        return
+      }
+
+      // For some reason next/navigation causes issues here >:(
+      window.location.replace(`/?token=${user.token}`)
     },
   )
 }

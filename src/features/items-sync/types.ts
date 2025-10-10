@@ -6,3 +6,5 @@ export type ProductMapping = {
   product: CopilotProduct
   item?: (Pick<Item, 'itemID' | 'code' | 'name'> & { amount: number }) | null
 }
+
+export type Mappable = { productId: string; priceId: string; itemId: string | null }

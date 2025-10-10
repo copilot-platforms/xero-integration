@@ -129,11 +129,11 @@ class SyncedInvoicesService extends AuthenticatedXeroService {
       // CASE II: For line item with productId & priceId, if synced product exists use it
       const syncedRecord = syncedXeroItems[item.priceId]
       if (syncedRecord) {
-        syncedXeroItemsMap[copilotPrice.id] = syncedRecord.itemId
+        syncedXeroItemsMap[copilotPrice.id] = z.string().parse(syncedRecord.itemId)
       } else {
         // CASE III: If synced product doesn't exist, schedule to create it
         itemsToCreate.push({
-          code: item.priceId, // Use priceID as item code since it is the only guarenteed unique identifier here
+          code: copilotPrice.id,
           name: copilotProduct.name,
           description: htmlToText(copilotProduct.description),
           isPurchased: false,

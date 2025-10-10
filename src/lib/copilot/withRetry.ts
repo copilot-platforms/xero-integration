@@ -2,6 +2,7 @@
 
 import pRetry from 'p-retry'
 import type { StatusableError } from '@/errors/BaseServerError'
+import logger from '@/lib//logger'
 
 export const withRetry = async <Args extends unknown[], R>(
   fn: (...args: Args) => Promise<R>,
@@ -50,7 +51,7 @@ export const withRetry = async <Args extends unknown[], R>(
         ) {
           return
         }
-        console.warn(
+        logger.warn(
           `CopilotAPI#withRetry | Attempt ${error.attemptNumber} failed. There are ${error.retriesLeft} retries left. Error:`,
           error,
         )

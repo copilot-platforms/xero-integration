@@ -6,7 +6,6 @@ import { SettingsForm } from '@settings/components/SettingsForm'
 import { defaultSettings } from '@settings/constants/defaults'
 import { SettingsContextProvider } from '@settings/context/SettingsContext'
 import SettingsService from '@settings/lib/Settings.service'
-import { cache } from 'react'
 import type { PageProps } from '@/app/(home)/types'
 import type { SettingsFields } from '@/db/schema/settings.schema'
 import type { XeroConnection, XeroConnectionWithTokenSet } from '@/db/schema/xeroConnections.schema'
@@ -19,7 +18,7 @@ import type { ClientXeroItem } from '@/lib/xero/types'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
-const getSettings = cache(async (user: User, connection: XeroConnection) => {
+const getSettings = async (user: User, connection: XeroConnection) => {
   let settings: SettingsFields
   if (connection.tenantId) {
     // Using tenantID even though tokenSet might be expired because the sync-settings feature don't need to perform Xero API calls
@@ -29,7 +28,7 @@ const getSettings = cache(async (user: User, connection: XeroConnection) => {
     settings = defaultSettings
   }
   return settings
-})
+}
 
 const getProductMappings = async (
   user: User,

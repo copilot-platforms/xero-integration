@@ -13,6 +13,7 @@ import logger from '@/lib/logger'
 import AuthenticatedXeroService from '@/lib/xero/AuthenticatedXero.service'
 import type { ItemUpdatePayload } from '@/lib/xero/types'
 import { htmlToText } from '@/utils/html'
+import type { Mappable } from '../types'
 
 class SyncedItemsService extends AuthenticatedXeroService {
   async createItems(itemsToCreate: Item[], prices: Record<string, PriceCreatedEvent>) {
@@ -31,7 +32,10 @@ class SyncedItemsService extends AuthenticatedXeroService {
     return newlyCreatedItems
   }
 
-  async getSyncedItemsMapByPriceIds(priceIds: string[] | 'all') {
+  /**
+   * Returns a list of Mappable items where the key is the priceId (guarenteed to be unique)
+   */
+  async getSyncedItemsMapByPriceIds(priceIds: string[] | 'all'): Promise<Record<string, Mappable>> {
     const dbMappings = await db
       .select(getTableFields(syncedItems, ['productId', 'priceId', 'itemId']))
       .from(syncedItems)
@@ -48,7 +52,7 @@ class SyncedItemsService extends AuthenticatedXeroService {
     }, {})
   }
 
-  async updateXeroItemsForProductId(
+  async updateSyncedItemsForProductId(
     productId: string,
     payload: ItemUpdatePayload,
   ): Promise<Item[]> {
@@ -81,7 +85,7 @@ class SyncedItemsService extends AuthenticatedXeroService {
     return items
   }
 
-  async createItemsForPrices(prices: PriceCreatedEvent[]): Promise<Item[]> {
+  async createSyncedItemsForPrices(prices: PriceCreatedEvent[]): Promise<Item[]> {
     const createdItems: Item[] = []
 
     for (const price of prices) {
@@ -105,6 +109,56 @@ class SyncedItemsService extends AuthenticatedXeroService {
       createdItems.push(items[0])
     }
     return createdItems
+  }
+
+  async addSyncedItems(items: Mappable[]) {
+    // We have to do this one-by-one because xero doesn't provide a bulk delete API
+    for (const item of items) {
+      logger.info('SyncedItemsService#addSyncedItems :: Adding mapping', item)
+
+      if (!item.itemId) {
+        logger.warn(
+          'SyncedItemsService#addSyncedItem :: Attempted to add non existant itemId for ',
+          item,
+        )
+        return
+      }
+
+      await db.insert(syncedItems).values({
+        portalId: this.user.portalId,
+        tenantId: this.connection.tenantId,
+        productId: item.productId,
+        priceId: item.priceId,
+        itemId: item.itemId,
+      })
+    }
+  }
+
+  async deleteSyncedItems(items: Mappable[]) {
+    // We have to do this one-by-one because xero doesn't provide a bulk delete API
+    for (const item of items) {
+      logger.info('SyncedItemsService#deleteSyncedItems :: Deleting mapping', item)
+
+      if (!item.itemId) {
+        logger.warn(
+          'SyncedItemsService#deleteSyncedItem :: Attempted to delete non existant itemId for ',
+          item,
+        )
+        return
+      }
+
+      await db
+        .delete(syncedItems)
+        .where(
+          and(
+            eq(syncedItems.portalId, this.user.portalId),
+            eq(syncedItems.tenantId, this.connection.tenantId),
+            eq(syncedItems.productId, item.productId),
+            eq(syncedItems.priceId, item.priceId),
+            eq(syncedItems.itemId, item.itemId),
+          ),
+        )
+    }
   }
 }
 
