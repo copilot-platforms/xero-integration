@@ -62,7 +62,7 @@ class WebhookService extends AuthenticatedXeroService {
       description: htmlToText(description),
     } satisfies ItemUpdatePayload
 
-    const items = await syncedItemsService.updateXeroItemsForProductId(
+    const items = await syncedItemsService.updateSyncedItemsForProductId(
       id,
       ItemUpdatePayloadSchema.parse(payload),
     )
@@ -73,7 +73,8 @@ class WebhookService extends AuthenticatedXeroService {
     const data = PriceCreatedEventSchema.parse(eventData)
 
     const syncedItemsService = new SyncedItemsService(this.user, this.connection)
-    return await syncedItemsService.createItemForPrice(data)
+    const [newPrice] = await syncedItemsService.createSyncedItemsForPrices([data])
+    return newPrice
   }
 }
 

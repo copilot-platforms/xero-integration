@@ -104,3 +104,10 @@ export const ItemUpdatePayloadSchema = z.object({
   description: z.string().optional(),
 })
 export type ItemUpdatePayload = z.infer<typeof ItemUpdatePayloadSchema>
+
+export type ClientXeroItem = {
+  itemID: string
+  code: string
+  name: string
+  amount: number
+}

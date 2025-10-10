@@ -1,20 +1,23 @@
 import { defaultSettings } from '@settings/constants/defaults'
 import { and, eq } from 'drizzle-orm'
 import db from '@/db'
+import { getTableFields } from '@/db/db.helpers'
 import { type SettingsFields, settings } from '@/db/schema/settings.schema'
 import AuthenticatedXeroService from '@/lib/xero/AuthenticatedXero.service'
 
 class SettingsService extends AuthenticatedXeroService {
   async getSettings(): Promise<SettingsFields> {
     const [syncSettings] = await db
-      .select({
-        syncProductsAutomatically: settings.syncProductsAutomatically,
-        addAbsorbedFees: settings.addAbsorbedFees,
-        useCompanyName: settings.useCompanyName,
-        isSyncEnabled: settings.isSyncEnabled,
-        initialInvoiceSettingsMapping: settings.initialInvoiceSettingsMapping,
-        initialProductSettingsMapping: settings.initialProductSettingsMapping,
-      })
+      .select(
+        getTableFields(settings, [
+          'syncProductsAutomatically',
+          'addAbsorbedFees',
+          'useCompanyName',
+          'isSyncEnabled',
+          'initialInvoiceSettingsMapping',
+          'initialProductSettingsMapping',
+        ]),
+      )
       .from(settings)
       .where(
         and(

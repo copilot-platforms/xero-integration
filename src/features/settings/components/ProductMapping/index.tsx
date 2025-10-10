@@ -2,9 +2,10 @@
 
 import { useSettingsContext } from '@settings/hooks/useSettings'
 import { Checkbox } from 'copilot-design-system'
+import { ProductMappingTable } from '@/features/settings/components/ProductMapping/ProductMappingTable'
 
 export const ProductMapping = () => {
-  const { syncProductsAutomatically, updateSettings } = useSettingsContext()
+  const { syncProductsAutomatically, updateSettings, productMappings } = useSettingsContext()
 
   return (
     <div className="mb-5">
@@ -14,6 +15,7 @@ export const ProductMapping = () => {
         checked={syncProductsAutomatically}
         onChange={() => updateSettings({ syncProductsAutomatically: !syncProductsAutomatically })}
       />
+      <ProductMappingTable items={productMappings} />
     </div>
   )
 }

@@ -9,8 +9,8 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: 'Copilot Xero Integration',
-  description: 'Sync Copilot invoices with Xero effortlessly',
+  title: 'Assembly Xero Integration',
+  description: 'Sync Assembly invoices with Xero effortlessly',
 }
 
 export default function RootLayout({
@@ -20,7 +20,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${inter.className} min-h-[100vh] bg-white antialiased`}>{children}</body>
+      <body className={`${inter.className} h-[100vh] bg-white antialiased`}>{children}</body>
     </html>
   )
 }

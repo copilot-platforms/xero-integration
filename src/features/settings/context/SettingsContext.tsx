@@ -1,18 +1,21 @@
 'use client'
 
-import { createContext, type ReactNode, useState } from 'react'
+import type { ProductMapping } from '@items-sync/types'
+import { createContext, type PropsWithChildren, useCallback, useState } from 'react'
+import type { SettingsFields } from '@/db/schema/settings.schema'
+import type { ClientXeroItem } from '@/lib/xero/types'
 
-type BaseSettingsContextType = {
-  syncProductsAutomatically: boolean
-  addAbsorbedFees: boolean
-  useCompanyName: boolean
-  initialInvoiceSettingsMapping: boolean
-  initialProductSettingsMapping: boolean
+type BaseSettingsContextType = SettingsFields & {
+  productMappings: ProductMapping[]
+}
+
+type WithXeroItems = {
+  xeroItems: ClientXeroItem[]
 }
 
 export type SettingsContextType = BaseSettingsContextType & {
   initialSettings: BaseSettingsContextType
-}
+} & WithXeroItems
 
 export const SettingsContext = createContext<
   | (SettingsContextType & {
@@ -28,31 +31,42 @@ export const SettingsContextProvider = ({
   useCompanyName,
   initialInvoiceSettingsMapping,
   initialProductSettingsMapping,
+  isSyncEnabled,
+  productMappings,
+  xeroItems,
   children,
-}: BaseSettingsContextType & { children: ReactNode }) => {
+}: BaseSettingsContextType & PropsWithChildren & WithXeroItems) => {
   const [settings, setSettings] = useState<SettingsContextType>({
     syncProductsAutomatically,
     addAbsorbedFees,
     useCompanyName,
     initialInvoiceSettingsMapping,
     initialProductSettingsMapping,
+    productMappings,
+    isSyncEnabled,
+    xeroItems,
+
     initialSettings: {
       syncProductsAutomatically,
       addAbsorbedFees,
       useCompanyName,
       initialInvoiceSettingsMapping,
       initialProductSettingsMapping,
+      isSyncEnabled,
+      productMappings,
     },
   })
+
+  const updateSettings = useCallback((state: Omit<Partial<SettingsContextType>, 'xeroItems'>) => {
+    setSettings((prev) => ({ ...prev, ...state }))
+  }, [])
 
   return (
     <SettingsContext.Provider
       value={{
         ...settings,
         setSettings,
-        updateSettings: (state) => {
-          setSettings({ ...settings, ...state })
-        },
+        updateSettings,
       }}
     >
       {children}

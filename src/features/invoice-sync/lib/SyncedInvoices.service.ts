@@ -10,6 +10,7 @@ import status from 'http-status'
 import { Invoice, type Item } from 'xero-node'
 import z from 'zod'
 import db from '@/db'
+import { getTableFields } from '@/db/db.helpers'
 import { type SyncedInvoiceCreatePayload, syncedInvoices } from '@/db/schema/syncedInvoices.schema'
 import APIError from '@/errors/APIError'
 import logger from '@/lib/logger'
@@ -20,6 +21,7 @@ import {
 } from '@/lib/xero/types'
 import { datetimeToDate } from '@/utils/date'
 import { htmlToText } from '@/utils/html'
+import { genRandomString } from '@/utils/string'
 
 class SyncedInvoicesService extends AuthenticatedXeroService {
   async syncInvoiceToXero(data: InvoiceCreatedEvent): Promise<{
@@ -97,12 +99,15 @@ class SyncedInvoicesService extends AuthenticatedXeroService {
       item.productId && lineProductIds.push(item.productId)
       item.priceId && linePriceIds.push(item.priceId)
     }
-    const products = await this.copilot.getProductsById(lineProductIds)
-    const prices = await this.copilot.getPricesById(linePriceIds)
+    const products = await this.copilot.getProductsMapById(lineProductIds)
+    const prices = await this.copilot.getPricesMapById(linePriceIds)
 
     // Get all synced items from db
     const syncedItemsService = new SyncedItemsService(this.user, this.connection)
-    const syncedXeroItems = await syncedItemsService.getSyncedItemsByPriceIds(Object.keys(prices))
+    const syncedXeroItems = await syncedItemsService.getSyncedItemsMapByPriceIds(
+      Object.keys(prices),
+    )
+
     // Object with key as priceId (guarenteed to be unique), and value as xero item
     const syncedXeroItemsMap: Record<string, string> = {}
 
@@ -123,15 +128,13 @@ class SyncedInvoicesService extends AuthenticatedXeroService {
       )
 
       // CASE II: For line item with productId & priceId, if synced product exists use it
-      const syncedRecord = syncedXeroItems.find(
-        (i) => i.productId === item.productId && i.priceId === item.priceId,
-      )
+      const syncedRecord = syncedXeroItems[item.priceId]
       if (syncedRecord) {
-        syncedXeroItemsMap[copilotPrice.id] = syncedRecord.itemId
+        syncedXeroItemsMap[copilotPrice.id] = z.string().parse(syncedRecord.itemId)
       } else {
         // CASE III: If synced product doesn't exist, schedule to create it
         itemsToCreate.push({
-          code: item.priceId, // Use priceID as item code since it is the only guarenteed unique identifier here
+          code: genRandomString(10),
           name: copilotProduct.name,
           description: htmlToText(copilotProduct.description),
           isPurchased: false,
@@ -162,11 +165,11 @@ class SyncedInvoicesService extends AuthenticatedXeroService {
     syncedInvoice?: Invoice,
     status?: SyncedInvoiceCreatePayload['status'], // allow db to default to 'pending'
   ) {
-    const selectFields = {
-      copilotInvoiceId: syncedInvoices.copilotInvoiceId,
-      xeroInvoiceId: syncedInvoices.xeroInvoiceId,
-      status: syncedInvoices.status,
-    } as const
+    const selectFields = getTableFields(syncedInvoices, [
+      'copilotInvoiceId',
+      'xeroInvoiceId',
+      'status',
+    ])
 
     const prevInvoices = await db
       .select(selectFields)
