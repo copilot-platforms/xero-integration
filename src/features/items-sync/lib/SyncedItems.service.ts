@@ -1,6 +1,7 @@
 import 'server-only'
 
 import type { PriceCreatedEvent } from '@invoice-sync/types'
+import type { Mappable } from '@items-sync/types'
 import { and, eq, inArray } from 'drizzle-orm'
 import status from 'http-status'
 import type { Item } from 'xero-node'
@@ -14,7 +15,6 @@ import AuthenticatedXeroService from '@/lib/xero/AuthenticatedXero.service'
 import type { ItemUpdatePayload } from '@/lib/xero/types'
 import { htmlToText } from '@/utils/html'
 import { genRandomString } from '@/utils/string'
-import type { Mappable } from '../types'
 
 class SyncedItemsService extends AuthenticatedXeroService {
   async createItems(itemsToCreate: Item[], prices: Record<string, PriceCreatedEvent>) {
