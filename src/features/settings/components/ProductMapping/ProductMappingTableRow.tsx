@@ -132,22 +132,23 @@ export const ProductMappingTableRow = ({
               </button>
             </div>
             <div className="max-h-56 overflow-y-auto">
-              {!!xeroItems?.length &&
-                Object.values(xeroItems).map((item) => (
-                  <button
-                    type="button"
-                    key={item.itemID}
-                    onClick={() => handleSelectMapping(item)}
-                    className="mapping-option-btn flex w-full cursor-pointer items-center justify-between px-3 py-1.5 text-left text-sm transition-colors hover:bg-gray-100"
-                  >
-                    <span className="line-clamp-1 break-all text-gray-600 lg:break-normal">
-                      {item.name}
-                    </span>
-                    <span className="text-body-micro text-gray-500 leading-body-micro">
-                      {renderUSD(item.amount)}
-                    </span>
-                  </button>
-                ))}
+              {!!xeroItems?.length
+                ? Object.values(xeroItems).map((item) => (
+                    <button
+                      type="button"
+                      key={item.itemID}
+                      onClick={() => handleSelectMapping(item)}
+                      className="mapping-option-btn flex w-full cursor-pointer items-center justify-between px-3 py-1.5 text-left text-sm transition-colors hover:bg-gray-100"
+                    >
+                      <span className="line-clamp-1 break-all text-gray-600 lg:break-normal">
+                        {item.name}
+                      </span>
+                      <span className="text-body-micro text-gray-500 leading-body-micro">
+                        {renderUSD(item.amount)}
+                      </span>
+                    </button>
+                  ))
+                : 'No items in Xero'}
               {false && <div className="px-3 py-2 text-gray-500 text-sm">No items found</div>}
             </div>
           </div>
