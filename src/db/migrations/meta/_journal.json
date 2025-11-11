@@ -5,29 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1758254927703,
-      "tag": "20250919040847_add_pgcrypto_extension",
-      "breakpoints": false
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1758254954871,
-      "tag": "20250919040914_add_inital_sync_tables",
-      "breakpoints": false
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1758623236059,
-      "tag": "20250923102716_add_failed_syncs_table",
-      "breakpoints": false
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1758795213096,
-      "tag": "20250925101333_add_settings_table",
+      "when": 1762851762311,
+      "tag": "20251111090242_add-initial-tables",
       "breakpoints": false
     }
   ]
