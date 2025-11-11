@@ -132,7 +132,7 @@ export const ProductMappingTableRow = ({
               </button>
             </div>
             <div className="max-h-56 overflow-y-auto">
-              {xeroItems?.length &&
+              {!!xeroItems?.length &&
                 Object.values(xeroItems).map((item) => (
                   <button
                     type="button"
