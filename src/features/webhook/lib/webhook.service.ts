@@ -46,6 +46,11 @@ class WebhookService extends AuthenticatedXeroService {
   }
 
   private handleInvoiceCreated = async (eventData: unknown) => {
+    logger.info(
+      'WebhookService#handleInvoiceCreated :: Handling invoice created for data',
+      eventData,
+    )
+
     const data = InvoiceCreatedEventSchema.parse(eventData)
     if (data.status === 'draft') {
       throw new APIError(`Ignoring draft invoice ${data.id}`, status.OK)
@@ -55,6 +60,8 @@ class WebhookService extends AuthenticatedXeroService {
   }
 
   private handleProductUpdated = async (eventData: unknown) => {
+    logger.info('handleProductUpdated :: Handling product updated for data', eventData)
+
     const { id, name, description } = ProductUpdatedEventSchema.parse(eventData)
     const syncedItemsService = new SyncedItemsService(this.user, this.connection)
     const payload = {
@@ -70,8 +77,9 @@ class WebhookService extends AuthenticatedXeroService {
   }
 
   private handlePriceCreated = async (eventData: unknown) => {
-    const data = PriceCreatedEventSchema.parse(eventData)
+    logger.info('WebhookService#handleInvoiceCreated :: Handling price created for data', eventData)
 
+    const data = PriceCreatedEventSchema.parse(eventData)
     const syncedItemsService = new SyncedItemsService(this.user, this.connection)
     const [newPrice] = await syncedItemsService.createSyncedItemsForPrices([data])
     return newPrice

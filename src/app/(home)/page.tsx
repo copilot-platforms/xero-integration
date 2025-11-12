@@ -13,12 +13,15 @@ import ProductMappingsService from '@/features/settings/lib/ProductMappings.serv
 import { CopilotAPI } from '@/lib/copilot/CopilotAPI'
 import { serializeClientUser } from '@/lib/copilot/models/ClientUser.model'
 import User from '@/lib/copilot/models/User.model'
+import logger from '@/lib/logger'
 import type { ClientXeroItem } from '@/lib/xero/types'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
 const getSettings = async (user: User, connection: XeroConnection) => {
+  logger.info('app/(home)/page#getSettings :: Fetching user settings for ', user, connection)
+
   let settings: SettingsFields
   if (connection.tenantId) {
     // Using tenantID even though tokenSet might be expired because the sync-settings feature don't need to perform Xero API calls
@@ -34,6 +37,8 @@ const getProductMappings = async (
   user: User,
   connection: XeroConnection,
 ): ReturnType<ProductMappingsService['getProductMappings']> => {
+  logger.info('app/(home)/page#getSettings :: Fetching product mappings for ', user, connection)
+
   if (!connection.tenantId) return []
 
   const productMappingsService = new ProductMappingsService(
@@ -44,6 +49,12 @@ const getProductMappings = async (
 }
 
 const getXeroItems = async (user: User, connection: XeroConnection): Promise<ClientXeroItem[]> => {
+  logger.info(
+    'app/(home)/page#getSettings :: Fetching xero items for ',
+    user.internalUserId,
+    connection,
+  )
+
   if (!connection.tenantId) return []
 
   const productMappingsService = new ProductMappingsService(
@@ -65,6 +76,7 @@ const Home = async ({ searchParams }: PageProps) => {
   const [workspace, connection] = await Promise.all([workspacePromise, connectionPromise])
 
   const clientUser = serializeClientUser(user)
+  logger.info('app/(home)/page :: Serving Xero Integration app for user', clientUser)
 
   const [settings, productMappings, xeroItems] = await Promise.all([
     getSettings(user, connection),

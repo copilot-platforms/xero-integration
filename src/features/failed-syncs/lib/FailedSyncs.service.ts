@@ -3,6 +3,7 @@ import { and, eq } from 'drizzle-orm'
 import db from '@/db'
 import { failedSyncs } from '@/db/schema/failedSyncs.schema'
 import BaseService from '@/lib/copilot/services/base.service'
+import logger from '@/lib/logger'
 
 class FailedSyncsService extends BaseService {
   async addFailedSyncRecord(
@@ -10,6 +11,15 @@ class FailedSyncsService extends BaseService {
     type: ValidWebhookEvent,
     payload: object & { id: string },
   ): Promise<void> {
+    logger.info(
+      'FailedSyncsService#addFailedSyncRecord :: Adding failed sync record for',
+      tenantId,
+      'for webhook',
+      type,
+      'with payload',
+      payload,
+    )
+
     const [existingFailedSync] = await db
       .select()
       .from(failedSyncs)
@@ -40,6 +50,13 @@ class FailedSyncsService extends BaseService {
   }
 
   async deleteFailedSync(portalId: string, tenantId: string, recordId: string) {
+    logger.info(
+      'FailedSyncsService#deleteFailedSync :: deleting failed sync record for',
+      portalId,
+      tenantId,
+      recordId,
+    )
+
     await db
       .delete(failedSyncs)
       .where(

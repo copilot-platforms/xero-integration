@@ -21,6 +21,11 @@ class AuthService extends BaseService {
   async handleXeroConnectionCallback(
     urlParams: Record<string, string | string[] | undefined>,
   ): Promise<XeroConnection> {
+    logger.info(
+      'AuthService#handleXeroConnectionCallback :: Handling Xero connection callback with url params',
+      urlParams,
+    )
+
     let tokenSet: TokenSet, tenantId: string
     try {
       const xero = new XeroAPI()
@@ -43,6 +48,13 @@ class AuthService extends BaseService {
   }
 
   private async handleRefreshFailure(safe: boolean, connection?: XeroConnection) {
+    logger.info(
+      'AuthService#handleRefreshFailure :: Handling refresh failure for safe mode',
+      safe,
+      'and connection',
+      connection,
+    )
+
     if (!safe) {
       await sendAuthorizationFailedNotification(this.user, connection)
       throw new XeroConnectionFailedError()
@@ -62,6 +74,13 @@ class AuthService extends BaseService {
   async authorizeXeroForCopilotWorkspace(
     safe: boolean = false,
   ): Promise<XeroConnection | XeroConnectionWithTokenSet> {
+    logger.info(
+      'AuthService#authorizeXeroForCopilotWorkspace :: Authorizing request with safe mode',
+      safe,
+      'for user',
+      this.user,
+    )
+
     // Find corresponding Xero connection for the workspace
     let connection = await this.connectionsService.getConnectionForWorkspace()
     const isAccessTokenValid =

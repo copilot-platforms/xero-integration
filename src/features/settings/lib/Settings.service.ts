@@ -3,10 +3,12 @@ import { and, eq } from 'drizzle-orm'
 import db from '@/db'
 import { getTableFields } from '@/db/db.helpers'
 import { type SettingsFields, settings } from '@/db/schema/settings.schema'
+import logger from '@/lib/logger'
 import AuthenticatedXeroService from '@/lib/xero/AuthenticatedXero.service'
 
 class SettingsService extends AuthenticatedXeroService {
   async getSettings(): Promise<SettingsFields> {
+    logger.info('SettingsService#getSettings :: Getting settings for portalId', this.user.portalId)
     const [syncSettings] = await db
       .select(
         getTableFields(settings, [

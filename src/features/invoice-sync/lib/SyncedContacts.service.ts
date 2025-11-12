@@ -15,6 +15,7 @@ import type { ValidContact } from '@/lib/xero/types'
 
 class SyncedContactsService extends AuthenticatedXeroService {
   async getSyncedContact(clientId: string): Promise<Contact> {
+    logger.info('SyncedContactsService#getSyncedContact :: Getting synced contact for', clientId)
     const copilot = new CopilotAPI(this.user.token)
     const client = await copilot.getClient(clientId)
 
@@ -50,13 +51,15 @@ class SyncedContactsService extends AuthenticatedXeroService {
         )
     }
     logger.info(
-      `XeroContactService#getSyncedXeroContact :: Couldn't find existing client... creating a new one for ${clientId}`,
+      `SyncedContactsService#createContact :: Couldn't find existing client... creating a new one for ${clientId}`,
     )
     contact = await this.createContact(client)
     return contact
   }
 
   async createContact(client: ClientResponse): Promise<Contact & { contactID: string }> {
+    logger.info('SyncedContactsService#createContact :: Creating synced contact for', client)
+
     const contactPayload = serializeContact(client)
     const contact = await this.xero.createContact(this.connection.tenantId, contactPayload)
     await db.insert(syncedContacts).values({
@@ -77,6 +80,11 @@ class SyncedContactsService extends AuthenticatedXeroService {
    * @param client
    */
   async validateXeroContact(contact: ValidContact, client: ClientResponse) {
+    logger.info(
+      'SyncedContactsService#validateXeroContact :: Validating xero contact for ',
+      contact,
+      client,
+    )
     if (
       contact.name !== buildClientName(client) ||
       contact.firstName !== client.givenName ||

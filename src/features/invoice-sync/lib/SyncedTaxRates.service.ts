@@ -8,11 +8,18 @@ import { areNumbersEqual } from '@/utils/number'
 
 class SyncedTaxRatesService extends AuthenticatedXeroService {
   async getTaxRateForItem(effectiveRate: number) {
+    logger.info(
+      'SyncedTaxRatesService#getTaxRateForItem :: Getting tax rate for effective rate',
+      effectiveRate,
+    )
+
     const taxRates = await this.xero.getTaxRates(this.connection.tenantId)
     let matchingTaxRate = taxRates?.find((t) => areNumbersEqual(t.effectiveRate, effectiveRate))
 
     if (!matchingTaxRate) {
-      logger.info('XeroTaxService#getTaxRateForItem :: Tax Rate not found... creating a new one')
+      logger.info(
+        'SyncedTaxRatesService#getTaxRateForItem :: Tax Rate not found... creating a new one',
+      )
       const payload = {
         name: `Copilot Sales Tax - ${effectiveRate}%`,
         taxComponents: [

@@ -4,6 +4,7 @@ import z from 'zod'
 import db from '@/db'
 import { type SyncedItem, syncedItems } from '@/db/schema/syncedItems.schema'
 import SyncedItemsService from '@/features/items-sync/lib/SyncedItems.service'
+import logger from '@/lib/logger'
 import AuthenticatedXeroService from '@/lib/xero/AuthenticatedXero.service'
 import type { ClientXeroItem } from '@/lib/xero/types'
 import { genRandomString } from '@/utils/string'
@@ -13,6 +14,11 @@ import { genRandomString } from '@/utils/string'
  */
 class ProductMappingsService extends AuthenticatedXeroService {
   async getClientXeroItems(): Promise<ClientXeroItem[]> {
+    logger.info(
+      'ProductMappingsService#getClientXeroItems :: Getting client xero items for portalId',
+      this.user.portalId,
+    )
+
     const xeroItems = await this.xero.getItems(this.connection.tenantId)
     return xeroItems.map((item) => ({
       itemID: z.string().parse(item.itemID),
@@ -23,6 +29,11 @@ class ProductMappingsService extends AuthenticatedXeroService {
   }
 
   async getProductMappings(): Promise<ProductMapping[]> {
+    logger.info(
+      'ProductMappingsService#getProductMappings :: Getting product mappings for portalId',
+      this.user.portalId,
+    )
+
     const syncedItemsService = new SyncedItemsService(this.user, this.connection)
     const mappingRecords = await syncedItemsService.getSyncedItemsMapByPriceIds('all')
 
@@ -57,6 +68,11 @@ class ProductMappingsService extends AuthenticatedXeroService {
   }
 
   async updateMappedItems(productMappings: Mappable[]): Promise<ProductMapping[]> {
+    logger.info(
+      'ProductMappingsService#updateMappedItems :: Updating product mappings:',
+      productMappings,
+    )
+
     // Create a map with priceId as key and SyncedItem as value
     const dbMappings = (
       await db

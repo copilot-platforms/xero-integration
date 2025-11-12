@@ -15,6 +15,10 @@ import XeroAPI from '@/lib/xero/XeroAPI'
 
 class XeroConnectionsService extends BaseService {
   async getConnectionForWorkspace(): Promise<XeroConnection> {
+    logger.info(
+      'XeroConnectionsService#getConnectionForWorkspace :: Fetching connection for portalId',
+      this.user.portalId,
+    )
     let [connection] = await db
       .select()
       .from(xeroConnections)
@@ -38,6 +42,13 @@ class XeroConnectionsService extends BaseService {
   async updateConnectionForWorkspace(
     payload: XeroConnectionUpdatePayload,
   ): Promise<XeroConnection> {
+    logger.info(
+      'XeroConnectionsService#updateConnectionForWorkspace :: Updating connection for portalId',
+      this.user.portalId,
+      'with payload',
+      payload,
+    )
+
     const connections = await db
       .update(xeroConnections)
       .set(payload)
@@ -49,6 +60,11 @@ class XeroConnectionsService extends BaseService {
   async handleXeroConnectionCallback(
     urlParams: Record<string, string | string[] | undefined>,
   ): Promise<XeroConnection> {
+    logger.info(
+      'XeroConnectionsService#handleXeroConnectionCallback :: Handling Xero connection callback for urlParams',
+      urlParams,
+    )
+
     let tokenSet: TokenSet, tenantId: string
     try {
       const xero = new XeroAPI()

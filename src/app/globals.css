@@ -4,7 +4,7 @@
   --text-primary: #0e0f11;
 }
 
-/* biome-ignore lint/suspicious/noUnknownAtRules: @theme is defined by Tailwind (https://tailwindcss.com/docs/theme) */
+/* biome-ignore lint/suspicious/noUnknownAtRules: @theme is handled by Tailwind */
 @theme inline {
   /* Backgrounds & fills */
   --color-primary: var(--text-primary);

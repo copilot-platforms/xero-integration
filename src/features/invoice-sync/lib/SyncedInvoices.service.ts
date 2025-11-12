@@ -29,6 +29,8 @@ class SyncedInvoicesService extends AuthenticatedXeroService {
     xeroInvoiceId: string | null
     status: SyncedInvoiceCreatePayload['status']
   }> {
+    logger.info('SyncedInvoicesService#syncInvoiceToXero :: Syncing invoice to xero:', data)
+
     const taxRatePromise = this.getTaxRate(data)
     const contactPromise = this.getContact(data)
     const productsWithPricePromise = this.getProductsWithPrice(data)
@@ -76,22 +78,31 @@ class SyncedInvoicesService extends AuthenticatedXeroService {
     }
 
     logger.info(
-      `XeroInvoiceSyncService#syncInvoiceToXero :: Synced Copilot invoice ${syncedInvoiceRecord.copilotInvoiceId} (${syncedInvoice?.invoiceNumber}) to Xero invoice ${syncedInvoiceRecord.xeroInvoiceId} for portalId ${this.connection.portalId}`,
+      `SyncedInvoicesService#syncInvoiceToXero :: Synced Copilot invoice ${syncedInvoiceRecord.copilotInvoiceId} (${syncedInvoice?.invoiceNumber}) to Xero invoice ${syncedInvoiceRecord.xeroInvoiceId} for portalId ${this.connection.portalId}`,
     )
     return syncedInvoiceRecord
   }
 
   private async getTaxRate(data: InvoiceCreatedEvent) {
+    logger.info('SyncedInvoicesService#getTaxRate :: Fetching tax rate for', data)
+
     const xeroTaxService = new SyncedTaxRatesService(this.user, this.connection)
     return data.taxAmount ? await xeroTaxService.getTaxRateForItem(data.taxPercentage) : undefined
   }
 
   private async getContact(data: InvoiceCreatedEvent) {
+    logger.info('SyncedInvoicesService#getContact :: Fetching contact for', data)
+
     const xeroContactService = new SyncedContactsService(this.user, this.connection)
     return await xeroContactService.getSyncedContact(data.clientId)
   }
 
   private async getProductsWithPrice(data: InvoiceCreatedEvent) {
+    logger.info(
+      'SyncedInvoicesService#getProductsWithPrice :: Getting products with price for',
+      data,
+    )
+
     // Get existing products & prices
     const lineProductIds = [],
       linePriceIds = []
@@ -165,6 +176,13 @@ class SyncedInvoicesService extends AuthenticatedXeroService {
     syncedInvoice?: Invoice,
     status?: SyncedInvoiceCreatePayload['status'], // allow db to default to 'pending'
   ) {
+    logger.info(
+      'SyncedInvoicesService#getOrCreateInvoiceRecord :: Getting or creating new invoice for',
+      data,
+      syncedInvoice,
+      status,
+    )
+
     const selectFields = getTableFields(syncedInvoices, [
       'copilotInvoiceId',
       'xeroInvoiceId',
@@ -201,6 +219,12 @@ class SyncedInvoicesService extends AuthenticatedXeroService {
     syncedInvoice?: Invoice,
     status?: SyncedInvoiceCreatePayload['status'],
   ) {
+    logger.info(
+      'SyncedInvoicesService#updateInvoiceRecord :: Updating invoice for',
+      data,
+      syncedInvoice,
+      status,
+    )
     const [invoice] = await db
       .update(syncedInvoices)
       .set({
