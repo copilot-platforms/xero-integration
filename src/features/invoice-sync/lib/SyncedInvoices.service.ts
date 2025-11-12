@@ -21,7 +21,6 @@ import {
 } from '@/lib/xero/types'
 import { datetimeToDate } from '@/utils/date'
 import { htmlToText } from '@/utils/html'
-import { genRandomString } from '@/utils/string'
 
 class SyncedInvoicesService extends AuthenticatedXeroService {
   async syncInvoiceToXero(data: InvoiceCreatedEvent): Promise<{
@@ -145,7 +144,7 @@ class SyncedInvoicesService extends AuthenticatedXeroService {
       } else {
         // CASE III: If synced product doesn't exist, schedule to create it
         itemsToCreate.push({
-          code: genRandomString(10),
+          code: copilotPrice.id,
           name: copilotProduct.name,
           description: htmlToText(copilotProduct.description),
           isPurchased: false,
