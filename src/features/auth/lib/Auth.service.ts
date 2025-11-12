@@ -77,8 +77,6 @@ class AuthService extends BaseService {
     logger.info(
       'AuthService#authorizeXeroForCopilotWorkspace :: Authorizing request with safe mode',
       safe,
-      'for user',
-      this.user,
     )
 
     // Find corresponding Xero connection for the workspace
@@ -87,6 +85,12 @@ class AuthService extends BaseService {
       connection.tokenSet?.access_token && connection.tokenSet?.expires_at
         ? connection.tokenSet.expires_at * 1000 > Date.now()
         : false
+    logger.info(
+      'AuthService#authorizeXeroForCopilotWorkspace :: Found connection',
+      connection,
+      '\nValidity:',
+      isAccessTokenValid,
+    )
 
     // --- Handle active connection
     if (!isAccessTokenValid) {
@@ -97,10 +101,11 @@ class AuthService extends BaseService {
       // If Xero connection was not found or unrefreshable. Send a mail prompting IUs to re-authorize
       if (!connection.tokenSet || !connection.tokenSet.refresh_token) {
         logger.info(
-          'XeroConnectionsService#authorizeXeroForCopilotWorkspace :: Unable to refresh Xero access token, no refresh token available',
+          'AuthService#authorizeXeroForCopilotWorkspace :: Unable to refresh Xero access token, no refresh token available',
         )
         await this.handleRefreshFailure(safe, connection)
       } else {
+        logger.info('AuthService#authorizeXeroForCopilotWorkspace :: Refreshing Xero access token')
         // Attempt to refresh access token via refresh token
         let tokenSet: TokenSet
         try {
