@@ -3,7 +3,6 @@ import { useSettingsContext } from '@settings/hooks/useSettings'
 import { Icon } from 'copilot-design-system'
 import type { ProductMapping } from '@/features/items-sync/types'
 import type { ClientXeroItem } from '@/lib/xero/types'
-import { genRandomString } from '@/utils/string'
 
 interface ProductMappingTableRowProps {
   item: ProductMapping
@@ -33,19 +32,19 @@ export const ProductMappingTableRow = ({
   }
 
   const handleSelectMapping = (newItem: ClientXeroItem) => {
-    const newProductMappings = productMappings.map((p) => {
-      if (p.price.id === item.price.id) {
+    const newProductMappings = productMappings.map((mapping) => {
+      if (mapping.price.id === item.price.id) {
         return {
-          ...p,
+          ...mapping,
           item: {
             itemID: newItem.itemID,
             name: newItem.name,
-            code: genRandomString(10),
+            code: mapping.price.id,
             amount: newItem.amount,
           },
         }
       }
-      return p
+      return mapping
     })
     updateSettings({ productMappings: newProductMappings })
     setOpenDropdownId(null)
