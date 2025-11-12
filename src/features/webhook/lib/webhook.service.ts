@@ -46,10 +46,7 @@ class WebhookService extends AuthenticatedXeroService {
   }
 
   private handleInvoiceCreated = async (eventData: unknown) => {
-    logger.info(
-      'WebhookService#handleInvoiceCreated :: Handling invoice created for data',
-      eventData,
-    )
+    logger.info('WebhookService#handleInvoiceCreated :: Handling invoice created')
 
     const data = InvoiceCreatedEventSchema.parse(eventData)
     if (data.status === 'draft') {
@@ -60,7 +57,7 @@ class WebhookService extends AuthenticatedXeroService {
   }
 
   private handleProductUpdated = async (eventData: unknown) => {
-    logger.info('handleProductUpdated :: Handling product updated for data', eventData)
+    logger.info('handleProductUpdated :: Handling product updated for data')
 
     const { id, name, description } = ProductUpdatedEventSchema.parse(eventData)
     const syncedItemsService = new SyncedItemsService(this.user, this.connection)
@@ -77,7 +74,7 @@ class WebhookService extends AuthenticatedXeroService {
   }
 
   private handlePriceCreated = async (eventData: unknown) => {
-    logger.info('WebhookService#handleInvoiceCreated :: Handling price created for data', eventData)
+    logger.info('WebhookService#handleInvoiceCreated :: Handling price created')
 
     const data = PriceCreatedEventSchema.parse(eventData)
     const syncedItemsService = new SyncedItemsService(this.user, this.connection)

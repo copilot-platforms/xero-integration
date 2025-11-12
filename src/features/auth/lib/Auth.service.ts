@@ -52,7 +52,7 @@ class AuthService extends BaseService {
       'AuthService#handleRefreshFailure :: Handling refresh failure for safe mode',
       safe,
       'and connection',
-      connection,
+      connection?.id,
     )
 
     if (!safe) {
@@ -87,8 +87,8 @@ class AuthService extends BaseService {
         : false
     logger.info(
       'AuthService#authorizeXeroForCopilotWorkspace :: Found connection',
-      connection,
-      '\nValidity:',
+      connection.id,
+      'with validity',
       isAccessTokenValid,
     )
 
