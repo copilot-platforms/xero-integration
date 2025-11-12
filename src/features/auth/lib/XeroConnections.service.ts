@@ -45,8 +45,10 @@ class XeroConnectionsService extends BaseService {
     logger.info(
       'XeroConnectionsService#updateConnectionForWorkspace :: Updating connection for portalId',
       this.user.portalId,
-      'with payload',
-      payload,
+      'with payload of status',
+      payload.status,
+      'and expiry',
+      payload.tokenSet?.expires_at,
     )
 
     const connections = await db
