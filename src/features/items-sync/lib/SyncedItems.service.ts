@@ -17,20 +17,27 @@ import { htmlToText } from '@/utils/html'
 import { genRandomString } from '@/utils/string'
 
 class SyncedItemsService extends AuthenticatedXeroService {
-  async createItems(itemsToCreate: Item[], prices: Record<string, PriceCreatedEvent>) {
-    logger.info('SyncedItemsService#createItems :: Creating items:', itemsToCreate, prices)
+  async createItems(itemsToCreate: Item[], pricesForCode: Record<string, PriceCreatedEvent>) {
+    logger.info('SyncedItemsService#createItems :: Creating items:', itemsToCreate, pricesForCode)
 
     if (!itemsToCreate.length) return []
 
     const newlyCreatedItems = await this.xero.createItems(this.connection.tenantId, itemsToCreate)
     await db.insert(syncedItems).values(
-      newlyCreatedItems.map((item) => ({
-        portalId: this.user.portalId,
-        productId: prices[item.code].productId,
-        priceId: item.code,
-        itemId: z.uuid().parse(item.itemID),
-        tenantId: this.connection.tenantId,
-      })),
+      newlyCreatedItems.map((item) => {
+        const insertPayload = {
+          portalId: this.user.portalId,
+          productId: pricesForCode[item.code].productId,
+          priceId: item.code,
+          itemId: z.uuid().parse(item.itemID),
+          tenantId: this.connection.tenantId,
+        }
+        logger.info(
+          'SyncedItemsService#createItems :: Inserting synced item record:',
+          insertPayload,
+        )
+        return insertPayload
+      }),
     )
     return newlyCreatedItems
   }
@@ -124,7 +131,7 @@ class SyncedItemsService extends AuthenticatedXeroService {
         },
       }
 
-      const items = await this.createItems([payload], { [price.id]: price })
+      const items = await this.createItems([payload], { [payload.code]: price })
       createdItems.push(items[0])
     }
     return createdItems
