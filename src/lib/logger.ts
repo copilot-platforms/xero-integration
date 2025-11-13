@@ -1,4 +1,5 @@
 import util from 'node:util'
+import env from '@/config/server.env'
 
 type LogLevel = 'log' | 'info' | 'warn' | 'error'
 
@@ -19,6 +20,11 @@ function formatArg(arg: unknown): string {
 }
 
 function loggerFactory(level: LogLevel): (...args: unknown[]) => void {
+  // Prevent 'log' level logs in production environment
+  if (level === 'log' && env.VERCEL_ENV === 'production') {
+    return () => null
+  }
+
   return (...args: unknown[]) => {
     const line = args.map(formatArg).join(' ')
     // biome-ignore lint/suspicious/noConsole: only 'log' level will be warned
