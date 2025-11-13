@@ -16,7 +16,7 @@ export const ProductMappingTableRow = ({
   setOpenDropdownId,
 }: ProductMappingTableRowProps) => {
   const { dropdownRef } = useDropdown({ setOpenDropdownId })
-  const { productMappings, updateSettings, xeroItems } = useSettingsContext()
+  const { productMappings, updateSettings, xeroItems, dropdownXeroItems } = useSettingsContext()
 
   const xeroItem = xeroItems.find((i) => i.itemID === item.item?.itemID)
 
@@ -32,16 +32,12 @@ export const ProductMappingTableRow = ({
   }
 
   const handleSelectMapping = (newItem: ClientXeroItem) => {
+    const { itemID, name, code, amount } = newItem
     const newProductMappings = productMappings.map((mapping) => {
       if (mapping.price.id === item.price.id) {
         return {
           ...mapping,
-          item: {
-            itemID: newItem.itemID,
-            name: newItem.name,
-            code: mapping.price.id,
-            amount: newItem.amount,
-          },
+          item: { itemID, name, code, amount },
         }
       }
       return mapping
@@ -107,6 +103,7 @@ export const ProductMappingTableRow = ({
           </div>
         </button>
 
+        {/* Dropdown */}
         {item.price.id === openDropdownId && (
           <div
             ref={dropdownRef}
@@ -121,6 +118,7 @@ export const ProductMappingTableRow = ({
                 className="w-full text-sm focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500"
               />
             </div>
+
             <div className="border-card-divider border-t-1 border-b-1 hover:bg-gray-100">
               <button
                 type="button"
@@ -130,9 +128,11 @@ export const ProductMappingTableRow = ({
                 Exclude from mapping
               </button>
             </div>
+
+            {/* Dropdown options */}
             <div className="max-h-56 overflow-y-auto">
-              {xeroItems?.length
-                ? Object.values(xeroItems).map((item) => (
+              {dropdownXeroItems?.length
+                ? Object.values(dropdownXeroItems).map((item) => (
                     <button
                       type="button"
                       key={item.itemID}
