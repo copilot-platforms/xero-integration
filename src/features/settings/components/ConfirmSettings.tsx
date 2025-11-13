@@ -29,6 +29,10 @@ export const ConfirmSettings = ({ mode }: ConfirmSettingsProps) => {
 
   const [isPending, setIsPending] = useState(false)
 
+  // console.log('productMappings', productMappings)
+  // console.log('initialSettings.productMappings', initialSettings.productMappings)
+  // console.log('isDeepEqual', isDeepEqual(productMappings, initialSettings.productMappings))
+
   const [initialMapping, showButtons] =
     mode === 'product'
       ? [

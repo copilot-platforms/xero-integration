@@ -14,6 +14,7 @@ import logger from '@/lib/logger'
 import AuthenticatedXeroService from '@/lib/xero/AuthenticatedXero.service'
 import type { ItemUpdatePayload } from '@/lib/xero/types'
 import { htmlToText } from '@/utils/html'
+import { genRandomString } from '@/utils/string'
 
 class SyncedItemsService extends AuthenticatedXeroService {
   async createItems(itemsToCreate: Item[], prices: Record<string, PriceCreatedEvent>) {
@@ -114,7 +115,7 @@ class SyncedItemsService extends AuthenticatedXeroService {
       }
 
       const payload = {
-        code: price.id,
+        code: genRandomString(12),
         name: product.name,
         description: htmlToText(product.description),
         isPurchased: false,
