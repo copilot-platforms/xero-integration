@@ -1,8 +1,8 @@
-import type SyncedInvoicesService from '@invoice-sync/lib/SyncedInvoices.service'
 import { calculateTaxAmount } from '@invoice-sync/lib/utils'
 import type { InvoiceCreatedEvent } from '@invoice-sync/types'
 import type { TaxRate, LineItem as XeroLineItem } from 'xero-node'
 import type { ClientResponse } from '@/lib/copilot/types'
+import logger from '@/lib/logger'
 import { AccountCode } from '@/lib/xero/constants'
 import {
   type ContactCreatePayload,
@@ -13,18 +13,29 @@ import {
 
 export const serializeLineItems = (
   copilotItems: InvoiceCreatedEvent['lineItems'],
-  products: Awaited<ReturnType<SyncedInvoicesService['getProductsWithPrice']>>,
+  priceIdToXeroItem: Record<string, XeroLineItem>,
   taxRate?: TaxRate,
 ): LineItem[] => {
   const xeroLineItems: LineItem[] = []
   for (const item of copilotItems) {
-    const lineItemID = item.priceId && products[item.priceId]
+    if (!item.priceId) continue
+
+    const xeroItem = priceIdToXeroItem[item.priceId]
+    if (!xeroItem) {
+      logger.warn(
+        'serializeLineItems :: No Xero item found for priceId:',
+        item.priceId,
+        'Skipping until checkbox implementation.',
+      )
+      continue
+    }
+
     const payload = {
       // NOTE: Both lineItemID and itemCode need to be provided for an invoice item to map to an item in Xero
       // Ref: https://developer.xero.com/documentation/api/accounting/invoices#post-invoices
       // See section on LineItems elements
-      lineItemID,
-      itemCode: lineItemID && item.priceId,
+      lineItemID: xeroItem.lineItemID,
+      itemCode: xeroItem.itemCode,
       description: item.description,
       unitAmount: item.amount / 100,
       quantity: item.quantity,
