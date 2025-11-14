@@ -44,7 +44,7 @@ class SyncedItemsService extends AuthenticatedXeroService {
   }
 
   /**
-   * Returns a list of Mappable items where the key is the priceId (guarenteed to be unique)
+   * Returns a list of Mappable items where the key is the priceId
    */
   async getSyncedItemsMapByPriceIds(priceIds: string[] | 'all'): Promise<Record<string, Mappable>> {
     logger.info(
@@ -97,10 +97,14 @@ class SyncedItemsService extends AuthenticatedXeroService {
     }
 
     const items: Item[] = []
+    const xeroItemsMap = await this.xero.getItemsMap(this.connection.tenantId)
+
     for (const item of syncedItemRecords) {
       // This is a bit slower but since this is an async task, it hardly matters
+      console.log('xeroItemXYZ', xeroItemsMap[item.itemId])
+
       const updatedItem = await this.xero.updateItem(this.connection.tenantId, item.itemId, {
-        code: item.priceId, // code is always item's priceId since this is guaranteed to be unique
+        code: xeroItemsMap[item.itemId].code,
         ...payload,
       })
       items.push(updatedItem)
