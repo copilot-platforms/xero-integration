@@ -25,10 +25,11 @@ class SyncedItemsService extends AuthenticatedXeroService {
     const newlyCreatedItems = await this.xero.createItems(this.connection.tenantId, itemsToCreate)
     await db.insert(syncedItems).values(
       newlyCreatedItems.map((item) => {
+        const price = pricesForCode[item.code]
         const insertPayload = {
           portalId: this.user.portalId,
-          productId: pricesForCode[item.code].productId,
-          priceId: item.code,
+          productId: price.productId,
+          priceId: price.id,
           itemId: z.uuid().parse(item.itemID),
           tenantId: this.connection.tenantId,
         }
