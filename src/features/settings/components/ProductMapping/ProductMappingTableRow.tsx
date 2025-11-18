@@ -1,7 +1,7 @@
+import type { ProductMapping } from '@items-sync/types'
 import { useDropdown } from '@settings/hooks/useDropdown'
 import { useSettingsContext } from '@settings/hooks/useSettings'
 import { Icon } from 'copilot-design-system'
-import type { ProductMapping } from '@/features/items-sync/types'
 import type { ClientXeroItem } from '@/lib/xero/types'
 
 interface ProductMappingTableRowProps {
