@@ -16,6 +16,11 @@ export const serializeLineItems = (
   priceIdToXeroItem: Record<string, XeroLineItem>,
   taxRate?: TaxRate,
 ): LineItem[] => {
+  logger.info('invoice-sync/lib/serializers#serializeLineItems :: Serializing line items:', {
+    copilotItems,
+    priceIdToXeroItem,
+    taxRate,
+  })
   const xeroLineItems: LineItem[] = []
   for (const item of copilotItems) {
     if (!item.priceId) continue
