@@ -4,6 +4,15 @@
   --text-primary: #0e0f11;
 }
 
+/* Undo preflight for specific elements.*/
+@layer base {
+  /* Revert and restore styles for svg element */
+  svg {
+    all: revert;
+    fill: none;
+  }
+}
+
 /* biome-ignore lint/suspicious/noUnknownAtRules: @theme is handled by Tailwind */
 @theme inline {
   /* Backgrounds & fills */
