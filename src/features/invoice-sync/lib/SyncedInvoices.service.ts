@@ -6,7 +6,7 @@ import { serializeLineItems } from '@invoice-sync/lib/serializers'
 import type { InvoiceCreatedEvent } from '@invoice-sync/types'
 import SyncedItemsService from '@items-sync/lib/SyncedItems.service'
 import SettingsService from '@settings/lib/Settings.service'
-import { and, eq } from 'drizzle-orm'
+import { and, desc, eq } from 'drizzle-orm'
 import status from 'http-status'
 import { Invoice, type Item } from 'xero-node'
 import z from 'zod'
@@ -94,6 +94,30 @@ class SyncedInvoicesService extends AuthenticatedXeroService {
       `SyncedInvoicesService#syncInvoiceToXero :: Synced Copilot invoice ${syncedInvoiceRecord.copilotInvoiceId} (${syncedInvoice?.invoiceNumber}) to Xero invoice ${syncedInvoiceRecord.xeroInvoiceId} for portalId ${this.connection.portalId}`,
     )
     return syncedInvoiceRecord
+  }
+
+  async getLastSyncedAt(): Promise<Date | null> {
+    logger.info(
+      'SyncedInvoicesService#getLastSyncedAt :: Fetching last synced at for portalId:',
+      this.user.portalId,
+    )
+
+    const selectFields = getTableFields(syncedInvoices, ['createdAt'])
+
+    const [lastSyncedInvoice] = await db
+      .select(selectFields)
+      .from(syncedInvoices)
+      .where(
+        and(
+          eq(syncedInvoices.portalId, this.user.portalId),
+          eq(syncedInvoices.tenantId, this.connection.tenantId),
+          eq(syncedInvoices.status, 'success'),
+        ),
+      )
+      .orderBy(desc(syncedInvoices.createdAt))
+      .limit(1)
+
+    return lastSyncedInvoice ? lastSyncedInvoice.createdAt : null
   }
 
   private async getTaxRate(data: InvoiceCreatedEvent) {

@@ -4,9 +4,10 @@ import { useAuthContext } from '@auth/hooks/useAuth'
 import { Callout } from 'copilot-design-system'
 import { updateSettingsAction } from '@/features/settings/actions/settings'
 import { useSettingsContext } from '@/features/settings/hooks/useSettings'
+import { timeAgo } from '@/utils/date'
 
 export const CalloutSection = () => {
-  const { user, connectionStatus } = useAuthContext()
+  const { user, connectionStatus, lastSyncedAt } = useAuthContext()
   const {
     isSyncEnabled,
     initialInvoiceSettingsMapping,
@@ -56,5 +57,12 @@ export const CalloutSection = () => {
       />
     )
 
-  return null
+  if (lastSyncedAt)
+    return (
+      <Callout
+        title={'Quickbooks sync is live'}
+        description={`Last synced ${timeAgo(new Date(lastSyncedAt))}`}
+        variant={'success'}
+      />
+    )
 }

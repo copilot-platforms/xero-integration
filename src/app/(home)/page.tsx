@@ -2,6 +2,7 @@ import { CalloutSection } from '@auth/components/CalloutSection'
 import { RealtimeXeroConnections } from '@auth/components/RealtimeXeroConnections'
 import { AuthContextProvider } from '@auth/context/AuthContext'
 import AuthService from '@auth/lib/Auth.service'
+import SyncedInvoicesService from '@invoice-sync/lib/SyncedInvoices.service'
 import { SettingsForm } from '@settings/components/SettingsForm'
 import { defaultSettings } from '@settings/constants/defaults'
 import { SettingsContextProvider } from '@settings/context/SettingsContext'
@@ -54,6 +55,16 @@ const getXeroItems = async (user: User, connection: XeroConnection): Promise<Cli
   return await productMappingsService.getClientXeroItems()
 }
 
+const getLastSyncedAt = async (user: User, connection: XeroConnection): Promise<Date | null> => {
+  if (!connection.tenantId) return null
+
+  const syncedInvoicesService = new SyncedInvoicesService(
+    user,
+    connection as XeroConnectionWithTokenSet,
+  )
+  return await syncedInvoicesService.getLastSyncedAt()
+}
+
 const Home = async ({ searchParams }: PageProps) => {
   const sp = await searchParams
   const user = await User.authenticate(sp.token)
@@ -73,10 +84,11 @@ const Home = async ({ searchParams }: PageProps) => {
     connection.id,
   )
 
-  const [settings, productMappings, xeroItems] = await Promise.all([
+  const [settings, productMappings, xeroItems, lastSyncedAt] = await Promise.all([
     getSettings(user, connection),
     getProductMappings(user, connection),
     getXeroItems(user, connection),
+    getLastSyncedAt(user, connection),
   ])
 
   return (
@@ -84,6 +96,7 @@ const Home = async ({ searchParams }: PageProps) => {
       user={clientUser}
       tenantId={connection.tenantId}
       connectionStatus={!!connection.status}
+      lastSyncedAt={lastSyncedAt}
       workspace={workspace}
     >
       <SettingsContextProvider
