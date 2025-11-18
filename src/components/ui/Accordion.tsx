@@ -1,5 +1,6 @@
 'use client'
 
+import { useAuthContext } from '@auth/hooks/useAuth'
 import { Heading, Icon } from 'copilot-design-system'
 import { type ReactElement, useState } from 'react'
 
@@ -10,17 +11,22 @@ type AccordionFormProps = {
 }
 
 export default function Accordion({ title, content, extra = null }: AccordionFormProps) {
-  const [isOpen, setIsOpen] = useState(true)
+  const { connectionStatus } = useAuthContext()
+  const [isOpen, setIsOpen] = useState(connectionStatus)
   const itemId = title.toLowerCase().replaceAll(' ', '-')
 
+  const handleAccordionClick = () => {
+    connectionStatus && setIsOpen((prev) => !prev)
+  }
+
   return (
-    <div className="mx-auto">
+    <div className={`mx-auto ${connectionStatus ? '' : 'opacity-50'}`}>
       {/** biome-ignore lint/a11y/noStaticElementInteractions: Need to nest buttons inside its children */}
       <div
         className="flex w-full cursor-pointer items-center justify-between py-[14px] pr-3"
-        onMouseUp={() => setIsOpen((prev) => !prev)}
+        onMouseUp={handleAccordionClick}
       >
-        <div className="flex items-center justify-between">
+        <div className="flex cursor-pointer items-center justify-between">
           <Heading size="lg">{title}</Heading>
           {/* Chevron rotates based on open state */}
           <div
