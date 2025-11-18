@@ -23,7 +23,7 @@ export default function Accordion({ title, content, extra = null }: AccordionFor
     <div className={`mx-auto ${connectionStatus ? '' : 'opacity-50'}`}>
       {/** biome-ignore lint/a11y/noStaticElementInteractions: Need to nest buttons inside its children */}
       <div
-        className="flex w-full cursor-pointer items-center justify-between py-[14px] pr-3"
+        className="flex w-full cursor-auto items-center justify-between py-[14px] pr-3"
         onMouseUp={handleAccordionClick}
       >
         <div className="flex cursor-pointer items-center justify-between">

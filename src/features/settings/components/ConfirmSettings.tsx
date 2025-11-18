@@ -114,7 +114,7 @@ export const ConfirmSettings = ({ mode }: ConfirmSettingsProps) => {
   if (initialMapping && !showButtons) return null
 
   return (
-    <div className="flex max-h-6 items-center justify-end">
+    <div className="flex max-h-6 select-none items-center justify-end">
       <Button
         label="Cancel"
         type="reset"
