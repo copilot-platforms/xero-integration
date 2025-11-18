@@ -32,7 +32,7 @@ class SyncedInvoicesService extends AuthenticatedXeroService {
         xeroInvoiceId: string | null
         status: SyncedInvoiceCreatePayload['status']
       }
-    | undefined
+    | Record<never, never>
   > {
     logger.info('SyncedInvoicesService#syncInvoiceToXero :: Syncing invoice to xero:', data)
 
@@ -49,7 +49,7 @@ class SyncedInvoicesService extends AuthenticatedXeroService {
     const lineItems = serializeLineItems(data.lineItems, priceIdToXeroItem, taxRate)
     if (!lineItems.length) {
       logger.info('No valid line items to sync to Xero invoice. Skipping sync...')
-      return
+      return {}
     }
 
     // Prepare invoice creation payload
