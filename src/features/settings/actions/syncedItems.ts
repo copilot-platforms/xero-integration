@@ -1,10 +1,10 @@
 'use server'
 
+import AuthService from '@auth/lib/Auth.service'
+import type { ProductMapping } from '@items-sync/types'
 import ProductMappingsService from '@settings/lib/ProductMappings.service'
 import status from 'http-status'
 import APIError from '@/errors/APIError'
-import AuthService from '@/features/auth/lib/Auth.service'
-import type { ProductMapping } from '@/features/items-sync/types'
 import User from '@/lib/copilot/models/User.model'
 
 export const updateSyncedItemsAction = async (token: string, productMappings: ProductMapping[]) => {

@@ -1,9 +1,9 @@
 'use client'
 
+import type { ProductMapping } from '@items-sync/types'
 import { ProductMappingTableRow } from '@settings/components/ProductMapping/ProductMappingTableRow'
 import { Icon } from 'copilot-design-system'
 import { useState } from 'react'
-import type { ProductMapping } from '@/features/items-sync/types'
 
 interface ProductMappingTableProps {
   items: ProductMapping[]
