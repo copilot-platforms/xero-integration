@@ -101,8 +101,6 @@ class SyncedItemsService extends AuthenticatedXeroService {
 
     for (const item of syncedItemRecords) {
       // This is a bit slower but since this is an async task, it hardly matters
-      console.log('xeroItemXYZ', xeroItemsMap[item.itemId])
-
       const updatedItem = await this.xero.updateItem(this.connection.tenantId, item.itemId, {
         code: xeroItemsMap[item.itemId].code,
         ...payload,
