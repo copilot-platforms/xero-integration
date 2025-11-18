@@ -50,10 +50,15 @@ export const ConfirmSettings = ({ mode }: ConfirmSettingsProps) => {
 
     setIsPending(true)
     try {
-      // --- Apply confirm action for Product section of the form
+      // --- Apply confirm / update action for Product section of the form
       if (mode === 'product') {
+        updateSettings({ initialProductSettingsMapping: true })
+
         const [newSettings, newMappings] = await Promise.all([
-          updateSettingsAction(user.token, { syncProductsAutomatically }),
+          updateSettingsAction(user.token, {
+            syncProductsAutomatically,
+            initialProductSettingsMapping: true,
+          }),
           updateSyncedItemsAction(user.token, productMappings),
         ])
         updateSettings({
@@ -62,18 +67,24 @@ export const ConfirmSettings = ({ mode }: ConfirmSettingsProps) => {
             ...newSettings,
             productMappings: newMappings,
           },
+          ...newSettings,
+          productMappings: newMappings,
         })
       } else {
+        updateSettings({ initialInvoiceSettingsMapping: true })
+
         // --- Apply confirm action for Invoice section of the form
         const newSettings = await updateSettingsAction(user.token, {
           addAbsorbedFees,
           useCompanyName,
+          initialInvoiceSettingsMapping: true,
         })
         updateSettings({
           initialSettings: {
             ...initialSettings,
             ...newSettings,
           },
+          ...newSettings,
         })
       }
     } catch (e) {
@@ -100,7 +111,7 @@ export const ConfirmSettings = ({ mode }: ConfirmSettingsProps) => {
     updateSettings(resetPayload)
   }
 
-  if (!showButtons) return null
+  if (initialMapping && !showButtons) return null
 
   return (
     <div className="flex max-h-6 items-center justify-end">

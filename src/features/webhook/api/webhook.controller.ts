@@ -1,8 +1,10 @@
 import AuthService from '@auth/lib/Auth.service'
 import { WebhookEventSchema } from '@invoice-sync/types'
+import SettingsService from '@settings/lib/Settings.service'
 import WebhookService from '@webhook/lib/webhook.service'
 import { type NextRequest, NextResponse } from 'next/server'
 import User from '@/lib/copilot/models/User.model'
+import logger from '@/lib/logger'
 
 export const handleCopilotWebhook = async (req: NextRequest) => {
   const token = req.nextUrl.searchParams.get('token')
@@ -10,6 +12,15 @@ export const handleCopilotWebhook = async (req: NextRequest) => {
 
   const authService = new AuthService(user)
   const connection = await authService.authorizeXeroForCopilotWorkspace()
+
+  const settingsService = new SettingsService(user, connection)
+  const settings = await settingsService.getSettings()
+  if (!settings.isSyncEnabled) {
+    logger.info(
+      'webhook/api/webhook.controller#handleCopilotWebhook :: Sync is disabled for this workspace. Skipping...',
+    )
+    return NextResponse.json({ message: 'Sync is disabled for this workspace' })
+  }
 
   const reqBody = await req.json()
   const webhookData = WebhookEventSchema.safeParse(reqBody)
