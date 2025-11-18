@@ -26,11 +26,14 @@ import { htmlToText } from '@/utils/html'
 import { genRandomString } from '@/utils/string'
 
 class SyncedInvoicesService extends AuthenticatedXeroService {
-  async syncInvoiceToXero(data: InvoiceCreatedEvent): Promise<{
-    copilotInvoiceId: string
-    xeroInvoiceId: string | null
-    status: SyncedInvoiceCreatePayload['status']
-  }> {
+  async syncInvoiceToXero(data: InvoiceCreatedEvent): Promise<
+    | {
+        copilotInvoiceId: string
+        xeroInvoiceId: string | null
+        status: SyncedInvoiceCreatePayload['status']
+      }
+    | undefined
+  > {
     logger.info('SyncedInvoicesService#syncInvoiceToXero :: Syncing invoice to xero:', data)
 
     const taxRatePromise = this.getTaxRate(data)
@@ -44,6 +47,10 @@ class SyncedInvoicesService extends AuthenticatedXeroService {
     ])
 
     const lineItems = serializeLineItems(data.lineItems, priceIdToXeroItem, taxRate)
+    if (!lineItems.length) {
+      logger.info('No valid line items to sync to Xero invoice. Skipping sync...')
+      return
+    }
 
     // Prepare invoice creation payload
     const invoice = CreateInvoicePayloadSchema.parse({
@@ -68,6 +75,10 @@ class SyncedInvoicesService extends AuthenticatedXeroService {
     let syncedInvoice: Invoice | undefined
     // Create and save invoice status
     try {
+      logger.info(
+        'SyncedInvoicesService#syncInvoiceToXero :: Creating invoice in Xero with payload:',
+        invoice,
+      )
       syncedInvoice = await this.xero.createInvoice(this.connection.tenantId, invoice)
       syncedInvoiceRecord = await this.updateInvoiceRecord(
         data,
@@ -273,7 +284,7 @@ class SyncedInvoicesService extends AuthenticatedXeroService {
       'status',
     ])
 
-    const prevInvoices = await db
+    const [prevInvoice] = await db
       .select(selectFields)
       .from(syncedInvoices)
       .where(
@@ -283,7 +294,13 @@ class SyncedInvoicesService extends AuthenticatedXeroService {
           eq(syncedInvoices.copilotInvoiceId, data.id),
         ),
       )
-    if (prevInvoices[0]) return prevInvoices[0]
+    if (prevInvoice) {
+      logger.info(
+        'SyncedInvoicesService#getOrCreateInvoiceRecord :: Found existing invoice. Ignoring creation.',
+        prevInvoice,
+      )
+      return prevInvoice
+    }
 
     const [invoice] = await db
       .insert(syncedInvoices)
