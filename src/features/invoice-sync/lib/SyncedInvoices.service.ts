@@ -171,7 +171,7 @@ class SyncedInvoicesService extends AuthenticatedXeroService {
   }
 
   /**
-   *
+   * @deprecated
    * @param data
    * @returns
    */
