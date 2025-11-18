@@ -75,6 +75,8 @@ const Home = async ({ searchParams }: PageProps) => {
   const workspacePromise = copilot.getWorkspace()
   const connectionPromise = authService.authorizeXeroForCopilotWorkspace(true)
   const [workspace, connection] = await Promise.all([workspacePromise, connectionPromise])
+  const needsReconnection =
+    !!connection.tokenSet && (connection.tokenSet.expires_at || 0) * 1000 < Date.now()
 
   const clientUser = serializeClientUser(user)
   logger.info(
@@ -96,6 +98,7 @@ const Home = async ({ searchParams }: PageProps) => {
       user={clientUser}
       tenantId={connection.tenantId}
       connectionStatus={!!connection.status}
+      needsReconnection={needsReconnection}
       lastSyncedAt={lastSyncedAt}
       workspace={workspace}
     >

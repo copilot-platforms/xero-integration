@@ -7,7 +7,7 @@ import { useSettingsContext } from '@/features/settings/hooks/useSettings'
 import { timeAgo } from '@/utils/date'
 
 export const CalloutSection = () => {
-  const { user, connectionStatus, lastSyncedAt } = useAuthContext()
+  const { user, connectionStatus, needsReconnection, lastSyncedAt } = useAuthContext()
   const {
     isSyncEnabled,
     initialInvoiceSettingsMapping,
@@ -15,6 +15,24 @@ export const CalloutSection = () => {
     initialSettings,
     updateSettings,
   } = useSettingsContext()
+
+  if (needsReconnection) {
+    return (
+      <Callout
+        title={'Sync failed'}
+        description={'Please reauthorize your account to reconnect with Xero.'}
+        variant={'error'}
+        actionProps={{
+          variant: 'primary',
+          label: 'Reauthorize',
+          prefixIcon: 'Repeat',
+          onClick: (_e: unknown) => {
+            window.open(`/auth/initiate?token=${user.token}`, '_blank', 'noopener,noreferrer')
+          },
+        }}
+      />
+    )
+  }
 
   if (!connectionStatus)
     return (
@@ -60,7 +78,7 @@ export const CalloutSection = () => {
   if (lastSyncedAt)
     return (
       <Callout
-        title={'Quickbooks sync is live'}
+        title={'Xero sync is live'}
         description={`Last synced ${timeAgo(new Date(lastSyncedAt))}`}
         variant={'success'}
       />
