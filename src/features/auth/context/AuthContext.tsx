@@ -8,6 +8,7 @@ export type AuthContextType = {
   user: ClientUser
   tenantId: string | null
   connectionStatus: boolean
+  lastSyncedAt?: Date | null
   workspace: WorkspaceResponse
 }
 
@@ -23,6 +24,7 @@ export const AuthContextProvider = ({
   user,
   tenantId,
   connectionStatus,
+  lastSyncedAt,
   workspace,
   children,
 }: AuthContextType & { children: ReactNode }) => {
@@ -30,6 +32,7 @@ export const AuthContextProvider = ({
     user,
     tenantId,
     connectionStatus,
+    lastSyncedAt,
     workspace,
   })
   return (
