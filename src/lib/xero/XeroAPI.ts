@@ -123,7 +123,7 @@ class XeroAPI {
 
   async deleteInvoice(tenantId: string, invoiceID: string): Promise<Invoice | undefined> {
     const { body } = await this.xero.accountingApi.updateInvoice(tenantId, invoiceID, {
-      invoices: [{ status: Invoice.StatusEnum.VOIDED }],
+      invoices: [{ status: Invoice.StatusEnum.DELETED }],
     })
     return body.invoices?.[0]
   }
