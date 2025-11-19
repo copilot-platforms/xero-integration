@@ -1,7 +1,7 @@
 import 'server-only'
 
 import status from 'http-status'
-import { type Invoice, type Item, type TaxRate, type TokenSet, XeroClient } from 'xero-node'
+import { Invoice, type Item, type TaxRate, type TokenSet, XeroClient } from 'xero-node'
 import z from 'zod'
 import env from '@/config/server.env'
 import APIError from '@/errors/APIError'
@@ -112,6 +112,13 @@ class XeroAPI {
       amount,
     })
     return body.payments?.[0].invoice
+  }
+
+  async voidInvoice(tenantId: string, invoiceID: string): Promise<Invoice | undefined> {
+    const { body } = await this.xero.accountingApi.updateInvoice(tenantId, invoiceID, {
+      invoices: [{ status: Invoice.StatusEnum.VOIDED }],
+    })
+    return body.invoices?.[0]
   }
 
   async getContact(tenantId: string, contactId: string): Promise<ValidContact | undefined> {
