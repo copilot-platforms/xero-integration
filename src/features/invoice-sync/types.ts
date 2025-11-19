@@ -34,6 +34,13 @@ export const InvoiceCreatedEventSchema = z.object({
 })
 export type InvoiceCreatedEvent = z.infer<typeof InvoiceCreatedEventSchema>
 
+/**
+ * Handles invoice modified events (e.g., updated, paid, voided, deleted)
+ */
+export const InvoiceModifiedEventSchema = z.object({
+  id: z.string(),
+})
+
 export const ProductUpdatedEventSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -50,6 +57,9 @@ export type PriceCreatedEvent = z.infer<typeof PriceCreatedEventSchema>
 
 export enum ValidWebhookEvent {
   InvoiceCreated = 'invoice.created',
+  InvoicePaid = 'invoice.paid',
+  InvoiceVoided = 'invoice.voided',
+  InvoiceDeleted = 'invoice.deleted',
   ProductUpdated = 'product.updated',
   PriceCreated = 'price.created',
 }
@@ -59,6 +69,24 @@ export const InvoiceCreatedWebhookSchema = z.object({
   data: InvoiceCreatedEventSchema,
 })
 export type InvoiceCreatedWebhook = z.infer<typeof InvoiceCreatedWebhookSchema>
+
+export const InvoicePaidWebhookSchema = z.object({
+  eventType: z.literal(ValidWebhookEvent.InvoicePaid),
+  data: InvoiceModifiedEventSchema,
+})
+export type InvoicePaidWebhook = z.infer<typeof InvoicePaidWebhookSchema>
+
+export const InvoiceVoidedWebhookSchema = z.object({
+  eventType: z.literal(ValidWebhookEvent.InvoiceVoided),
+  data: InvoiceModifiedEventSchema,
+})
+export type InvoiceVoidedWebhook = z.infer<typeof InvoiceVoidedWebhookSchema>
+
+export const InvoiceDeletedWebhookSchema = z.object({
+  eventType: z.literal(ValidWebhookEvent.InvoiceDeleted),
+  data: InvoiceModifiedEventSchema,
+})
+export type InvoiceDeletedWebhook = z.infer<typeof InvoiceDeletedWebhookSchema>
 
 export const ProductUpdatedWebhookSchema = z.object({
   eventType: z.literal(ValidWebhookEvent.ProductUpdated),
@@ -74,6 +102,9 @@ export type PriceCreatedWebhook = z.infer<typeof PriceCreatedWebhookSchema>
 
 export const WebhookEventSchema = z.discriminatedUnion('eventType', [
   InvoiceCreatedWebhookSchema,
+  InvoicePaidWebhookSchema,
+  InvoiceVoidedWebhookSchema,
+  InvoiceDeletedWebhookSchema,
   ProductUpdatedWebhookSchema,
   PriceCreatedWebhookSchema,
 ])
