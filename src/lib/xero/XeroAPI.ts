@@ -6,6 +6,7 @@ import z from 'zod'
 import env from '@/config/server.env'
 import APIError from '@/errors/APIError'
 import logger from '@/lib/logger'
+import { AccountCode } from '@/lib/xero/constants'
 import type {
   ContactCreatePayload,
   CreateInvoicePayload,
@@ -79,6 +80,11 @@ class XeroAPI {
     return connections[0].tenantId
   }
 
+  async getInvoiceById(tenantId: string, invoiceID: string): Promise<Invoice | undefined> {
+    const { body } = await this.xero.accountingApi.getInvoice(tenantId, invoiceID)
+    return body.invoices?.[0]
+  }
+
   async createInvoice(
     tenantId: string,
     invoice: CreateInvoicePayload,
@@ -90,6 +96,22 @@ class XeroAPI {
       true,
     )
     return body.invoices?.[0]
+  }
+
+  async markInvoicePaid(
+    tenantId: string,
+    invoiceID: string,
+    amount: number,
+  ): Promise<Invoice | undefined> {
+    // Note: We can't just update the invoice status to "PAID", we need to create an actual payment for the invoice
+    // Ref: https://developer.xero.com/documentation/api/accounting/payments#post-payments
+    const { body } = await this.xero.accountingApi.createPayment(tenantId, {
+      invoice: { invoiceID },
+      code: 'ACCREC',
+      account: { code: AccountCode.SALES },
+      amount,
+    })
+    return body.payments?.[0].invoice
   }
 
   async getContact(tenantId: string, contactId: string): Promise<ValidContact | undefined> {
