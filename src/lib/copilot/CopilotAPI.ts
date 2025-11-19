@@ -1,11 +1,11 @@
 import 'server-only'
 
+import { type InvoiceCreatedEvent, InvoiceCreatedEventSchema } from '@invoice-sync/types'
 import type { CopilotAPI as SDK } from 'copilot-node-sdk'
 import { copilotApi } from 'copilot-node-sdk'
 import z from 'zod'
 import env from '@/config/server.env'
 import { MAX_FETCH_COPILOT_RESOURCES } from '@/constants/limits'
-import { type InvoiceCreatedEvent, InvoiceCreatedEventSchema } from '@/features/invoice-sync/types'
 import {
   type ClientRequest,
   type ClientResponse,
