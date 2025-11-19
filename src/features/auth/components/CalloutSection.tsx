@@ -1,9 +1,9 @@
 'use client'
 
 import { useAuthContext } from '@auth/hooks/useAuth'
+import { updateSettingsAction } from '@settings/actions/settings'
+import { useSettingsContext } from '@settings/hooks/useSettings'
 import { Callout } from 'copilot-design-system'
-import { updateSettingsAction } from '@/features/settings/actions/settings'
-import { useSettingsContext } from '@/features/settings/hooks/useSettings'
 import { timeAgo } from '@/utils/date'
 
 export const CalloutSection = () => {
