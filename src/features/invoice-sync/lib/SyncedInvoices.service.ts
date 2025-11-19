@@ -148,6 +148,33 @@ class SyncedInvoicesService extends AuthenticatedXeroService {
     )) as Invoice
   }
 
+  async voidInvoice(copilotInvoiceId: string) {
+    logger.info('SyncedInvoicesService#voidInvoice :: Voiding invoice in xero:', copilotInvoiceId)
+
+    let invoiceRecord = await this.getOrCreateInvoiceRecord(copilotInvoiceId)
+
+    if (!invoiceRecord.xeroInvoiceId) {
+      invoiceRecord = await this.createMissingXeroInvoice(copilotInvoiceId)
+    }
+
+    const invoice = await this.xero.getInvoiceById(
+      this.connection.tenantId,
+      z.uuid().parse(invoiceRecord.xeroInvoiceId),
+    )
+    logger.info('SyncedInvoicesService#voidInvoice :: Fetched Xero invoice for voiding:', invoice)
+    if (!invoice) {
+      throw new APIError(
+        `Xero invoice ${invoiceRecord.xeroInvoiceId} not found for Copilot invoice ${copilotInvoiceId}`,
+        status.NOT_FOUND,
+      )
+    }
+
+    return (await this.xero.voidInvoice(
+      this.connection.tenantId,
+      z.uuid().parse(invoiceRecord.xeroInvoiceId),
+    )) as Invoice
+  }
+
   async getLastSyncedAt(): Promise<Date | null> {
     logger.info(
       'SyncedInvoicesService#getLastSyncedAt :: Fetching last synced at for portalId:',
