@@ -73,11 +73,11 @@ class WebhookService extends AuthenticatedXeroService {
   }
 
   private handleInvoiceVoided = async (eventData: unknown) => {
-    await logger.info('WebhookService#handleInvoiceVoided :: Handling invoice voided')
+    logger.info('WebhookService#handleInvoiceVoided :: Handling invoice voided')
 
     const data = InvoiceModifiedEventSchema.parse(eventData)
-    // TODO: in next ticket
-    return data
+    const invoiceSyncService = new XeroInvoiceSyncService(this.user, this.connection)
+    return await invoiceSyncService.voidInvoice(data.id)
   }
 
   private handleInvoiceDeleted = async (eventData: unknown) => {
