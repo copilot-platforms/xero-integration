@@ -4,6 +4,7 @@ import FailedSyncsService from '@failed-syncs/lib/FailedSyncs.service'
 import XeroInvoiceSyncService from '@invoice-sync/lib/SyncedInvoices.service'
 import {
   InvoiceCreatedEventSchema,
+  InvoiceModifiedEventSchema,
   PriceCreatedEventSchema,
   ProductUpdatedEventSchema,
   ValidWebhookEvent,
@@ -26,11 +27,18 @@ class WebhookService extends AuthenticatedXeroService {
     )
     logger.info('WebhookService#handleEvent :: Received webhook event data', data)
 
-    const eventHandlerMap: Record<WebhookEvent['eventType'], (data: unknown) => Promise<object>> = {
+    const eventHandlerMap: Record<
+      WebhookEvent['eventType'],
+      (data: unknown) => Promise<object> | Promise<void>
+    > = {
       [ValidWebhookEvent.InvoiceCreated]: this.handleInvoiceCreated,
+      [ValidWebhookEvent.InvoicePaid]: this.handleInvoicePaid,
+      [ValidWebhookEvent.InvoiceVoided]: this.handleInvoiceVoided,
+      [ValidWebhookEvent.InvoiceDeleted]: this.handleInvoiceDeleted,
       [ValidWebhookEvent.ProductUpdated]: this.handleProductUpdated,
       [ValidWebhookEvent.PriceCreated]: this.handlePriceCreated,
     }
+
     const handler = eventHandlerMap[data.eventType]
     try {
       return await handler(data.data)
@@ -54,6 +62,30 @@ class WebhookService extends AuthenticatedXeroService {
     }
     const xeroInvoiceSyncService = new XeroInvoiceSyncService(this.user, this.connection)
     return await xeroInvoiceSyncService.syncInvoiceToXero(data)
+  }
+
+  private handleInvoicePaid = async (eventData: unknown) => {
+    await logger.info('WebhookService#handleInvoicePaid :: Handling invoice paid')
+
+    const data = InvoiceModifiedEventSchema.parse(eventData)
+    const invoiceSyncService = new XeroInvoiceSyncService(this.user, this.connection)
+    return await invoiceSyncService.syncPaidInvoiceToXero(data.id)
+  }
+
+  private handleInvoiceVoided = async (eventData: unknown) => {
+    await logger.info('WebhookService#handleInvoiceVoided :: Handling invoice voided')
+
+    const data = InvoiceModifiedEventSchema.parse(eventData)
+    // TODO: in next ticket
+    return data
+  }
+
+  private handleInvoiceDeleted = async (eventData: unknown) => {
+    await logger.info('WebhookService#handleInvoiceDeleted :: Handling invoice deleted')
+
+    const data = InvoiceModifiedEventSchema.parse(eventData)
+    // TODO: in next ticket
+    return data
   }
 
   private handleProductUpdated = async (eventData: unknown) => {
