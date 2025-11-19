@@ -5,6 +5,7 @@ import { copilotApi } from 'copilot-node-sdk'
 import z from 'zod'
 import env from '@/config/server.env'
 import { MAX_FETCH_COPILOT_RESOURCES } from '@/constants/limits'
+import { type InvoiceCreatedEvent, InvoiceCreatedEventSchema } from '@/features/invoice-sync/types'
 import {
   type ClientRequest,
   type ClientResponse,
@@ -175,6 +176,17 @@ export class CopilotAPI {
     }, {})
   }
 
+  /**
+   * Returns an invoice from Copilot
+   * @param copilotInvoiceId ID of the invoice in Copilot
+   */
+  async _getInvoice(copilotInvoiceId: string): Promise<InvoiceCreatedEvent> {
+    logger.info('CopilotAPI#_getInvoice', copilotInvoiceId)
+    return InvoiceCreatedEventSchema.parse(
+      await this.copilot.retrieveInvoice({ id: copilotInvoiceId }),
+    )
+  }
+
   private wrapWithRetry<Args extends unknown[], R>(
     fn: (...args: Args) => Promise<R>,
   ): (...args: Args) => Promise<R> {
@@ -198,4 +210,5 @@ export class CopilotAPI {
   createNotification = this.wrapWithRetry(this._createNotification)
   getProductsMapById = this.wrapWithRetry(this._getProducts)
   getPricesMapById = this.wrapWithRetry(this._getPrices)
+  getInvoice = this.wrapWithRetry(this._getInvoice)
 }
