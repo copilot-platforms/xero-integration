@@ -29,7 +29,7 @@ class WebhookService extends AuthenticatedXeroService {
 
     const eventHandlerMap: Record<
       WebhookEvent['eventType'],
-      (data: unknown) => Promise<object> | Promise<void>
+      (data: unknown) => Promise<object | undefined> | Promise<void>
     > = {
       [ValidWebhookEvent.InvoiceCreated]: this.handleInvoiceCreated,
       [ValidWebhookEvent.InvoicePaid]: this.handleInvoicePaid,
@@ -84,8 +84,8 @@ class WebhookService extends AuthenticatedXeroService {
     await logger.info('WebhookService#handleInvoiceDeleted :: Handling invoice deleted')
 
     const data = InvoiceModifiedEventSchema.parse(eventData)
-    // TODO: in next ticket
-    return data
+    const invoiceSyncService = new XeroInvoiceSyncService(this.user, this.connection)
+    return await invoiceSyncService.deleteInvoice(data.id)
   }
 
   private handleProductUpdated = async (eventData: unknown) => {

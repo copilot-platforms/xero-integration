@@ -114,12 +114,7 @@ class SyncedInvoicesService extends AuthenticatedXeroService {
     return record
   }
 
-  async syncPaidInvoiceToXero(copilotInvoiceId: string) {
-    logger.info(
-      'SyncedInvoicesService#syncPaidInvoiceToXero :: Syncing paid invoice to xero:',
-      copilotInvoiceId,
-    )
-
+  async getValidatedInvoiceRecord(copilotInvoiceId: string) {
     let invoiceRecord = await this.getOrCreateInvoiceRecord(copilotInvoiceId)
 
     if (!invoiceRecord.xeroInvoiceId) {
@@ -130,16 +125,27 @@ class SyncedInvoicesService extends AuthenticatedXeroService {
       this.connection.tenantId,
       z.uuid().parse(invoiceRecord.xeroInvoiceId),
     )
-    logger.info(
-      'SyncedInvoicesService#syncPaidInvoiceToXero :: Fetched Xero invoice for payment sync:',
-      invoice,
-    )
     if (!invoice) {
       throw new APIError(
         `Xero invoice ${invoiceRecord.xeroInvoiceId} not found for Copilot invoice ${copilotInvoiceId}`,
         status.NOT_FOUND,
       )
     }
+
+    logger.info(
+      'SyncedInvoicesService#getValidatedInvoiceRecord :: Fetched Xero invoice for payment sync:',
+      invoice,
+    )
+    return { invoiceRecord, invoice }
+  }
+
+  async syncPaidInvoiceToXero(copilotInvoiceId: string) {
+    logger.info(
+      'SyncedInvoicesService#syncPaidInvoiceToXero :: Syncing paid invoice to xero:',
+      copilotInvoiceId,
+    )
+
+    const { invoiceRecord, invoice } = await this.getValidatedInvoiceRecord(copilotInvoiceId)
 
     return (await this.xero.markInvoicePaid(
       this.connection.tenantId,
@@ -151,28 +157,25 @@ class SyncedInvoicesService extends AuthenticatedXeroService {
   async voidInvoice(copilotInvoiceId: string) {
     logger.info('SyncedInvoicesService#voidInvoice :: Voiding invoice in xero:', copilotInvoiceId)
 
-    let invoiceRecord = await this.getOrCreateInvoiceRecord(copilotInvoiceId)
+    const { invoiceRecord } = await this.getValidatedInvoiceRecord(copilotInvoiceId)
 
-    if (!invoiceRecord.xeroInvoiceId) {
-      invoiceRecord = await this.createMissingXeroInvoice(copilotInvoiceId)
-    }
-
-    const invoice = await this.xero.getInvoiceById(
+    return await this.xero.voidInvoice(
       this.connection.tenantId,
       z.uuid().parse(invoiceRecord.xeroInvoiceId),
     )
-    logger.info('SyncedInvoicesService#voidInvoice :: Fetched Xero invoice for voiding:', invoice)
-    if (!invoice) {
-      throw new APIError(
-        `Xero invoice ${invoiceRecord.xeroInvoiceId} not found for Copilot invoice ${copilotInvoiceId}`,
-        status.NOT_FOUND,
-      )
-    }
+  }
 
-    return (await this.xero.voidInvoice(
+  async deleteInvoice(copilotInvoiceId: string) {
+    logger.info(
+      'SyncedInvoicesService#deleteInvoice :: Deleting invoice in xero:',
+      copilotInvoiceId,
+    )
+
+    const { invoiceRecord } = await this.getValidatedInvoiceRecord(copilotInvoiceId)
+    return await this.xero.deleteInvoice(
       this.connection.tenantId,
       z.uuid().parse(invoiceRecord.xeroInvoiceId),
-    )) as Invoice
+    )
   }
 
   async getLastSyncedAt(): Promise<Date | null> {
