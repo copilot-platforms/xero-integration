@@ -8,6 +8,13 @@
       "when": 1762851762311,
       "tag": "20251111090242_add-initial-tables",
       "breakpoints": false
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1763548740491,
+      "tag": "20251119103900_add-additional-sync-types",
+      "breakpoints": false
     }
   ]
 }

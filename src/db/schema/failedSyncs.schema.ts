@@ -4,6 +4,9 @@ import { timestamps } from '@/db/db.helpers'
 
 export const failedSyncTypeEnum = pgEnum('failed_syncs_type', [
   ValidWebhookEvent.InvoiceCreated,
+  ValidWebhookEvent.InvoicePaid,
+  ValidWebhookEvent.InvoiceVoided,
+  ValidWebhookEvent.InvoiceDeleted,
   ValidWebhookEvent.ProductUpdated,
   ValidWebhookEvent.PriceCreated,
 ])
