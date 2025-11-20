@@ -1,10 +1,10 @@
 'use client'
 
 import { useAuthContext } from '@auth/hooks/useAuth'
+import { useTimeAgo } from '@auth/hooks/useTimeAgo'
 import { updateSettingsAction } from '@settings/actions/settings'
 import { useSettingsContext } from '@settings/hooks/useSettings'
 import { Callout } from 'copilot-design-system'
-import { timeAgo } from '@/utils/date'
 
 export const CalloutSection = () => {
   const { user, connectionStatus, needsReconnection, lastSyncedAt } = useAuthContext()
@@ -15,6 +15,8 @@ export const CalloutSection = () => {
     initialSettings,
     updateSettings,
   } = useSettingsContext()
+
+  const timeAgo = useTimeAgo(lastSyncedAt)
 
   if (needsReconnection) {
     return (
@@ -79,7 +81,7 @@ export const CalloutSection = () => {
     return (
       <Callout
         title={'Xero sync is live'}
-        description={`Last synced ${timeAgo(new Date(lastSyncedAt))}`}
+        description={`Last synced ${timeAgo}`}
         variant={'success'}
       />
     )
