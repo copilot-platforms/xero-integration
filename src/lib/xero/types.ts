@@ -77,7 +77,7 @@ export type CreateInvoicePayload = z.infer<typeof CreateInvoicePayloadSchema>
 export type ValidContact = Contact & { contactID: string }
 
 export const ContactCreatePayloadSchema = z.object({
-  name: z.string().min(1).optional(),
+  name: z.string().min(1),
   firstName: z.string().min(1).optional(),
   lastName: z.string().optional(),
   emailAddress: z.email(),
