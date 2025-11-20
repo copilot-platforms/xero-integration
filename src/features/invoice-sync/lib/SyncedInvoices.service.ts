@@ -5,7 +5,6 @@ import SyncedTaxRatesService from '@invoice-sync/lib/SyncedTaxRates.service'
 import { serializeLineItems } from '@invoice-sync/lib/serializers'
 import type { InvoiceCreatedEvent } from '@invoice-sync/types'
 import SyncedItemsService from '@items-sync/lib/SyncedItems.service'
-import SettingsService from '@settings/lib/Settings.service'
 import { and, desc, eq } from 'drizzle-orm'
 import status from 'http-status'
 import { Invoice, type Item } from 'xero-node'
@@ -226,15 +225,18 @@ class SyncedInvoicesService extends AuthenticatedXeroService {
       data,
     )
 
-    const priceIdToXeroItem: Record<string, Item> = {}
-    const xeroItems = await this.xero.getItems(this.connection.tenantId)
     const syncedItemsService = new SyncedItemsService(this.user, this.connection)
-    const syncedItemsMap = await syncedItemsService.getSyncedItemsMapByPriceIds('all')
+    const [xeroItems, syncedItemsMap, products, prices] = await Promise.all([
+      this.xero.getItems(this.connection.tenantId),
+      syncedItemsService.getSyncedItemsMapByPriceIds('all'),
+      this.copilot.getProductsMapById('all'),
+      this.copilot.getPricesMapById('all'),
+    ])
+
+    const priceIdToXeroItem: Record<string, Item> = {}
 
     const itemsToCreate: Item[] = []
-    const itemIdToPriceMap: Record<string, CopilotPrice> = {}
-    const products = await this.copilot.getProductsMapById('all')
-    const prices = await this.copilot.getPricesMapById('all')
+    const itemCodeToPriceMap: Record<string, CopilotPrice> = {}
 
     for (const item of data.lineItems) {
       if (!item.productId || !item.priceId) continue
@@ -249,127 +251,49 @@ class SyncedInvoicesService extends AuthenticatedXeroService {
         }
       }
 
-      // CASE II: If synced product doesn't exist, check syncProductsAutomatically setting
+      // CASE II: If synced product doesn't exist, create new ones
       const code = genRandomString(12)
-      const settingsService = new SettingsService(this.user, this.connection)
-      const settings = await settingsService.getSettings()
-
-      if (settings.syncProductsAutomatically) {
-        const copilotProduct = products[item.productId]
-        const copilotPrice = prices[item.priceId]
-        logger.info(
-          'XeroInvoiceSyncService#getPriceIdToXeroItem :: Creating new item for lineItem',
-          item.description,
-          {
-            copilotProduct,
-            copilotPrice,
-          },
-        )
-        // CASE III: If synced product doesn't exist, schedule to create it
-        itemsToCreate.push({
-          code,
-          name: copilotProduct.name,
-          description: htmlToText(copilotProduct.description),
-          isPurchased: false,
-          salesDetails: {
-            unitPrice: copilotPrice.amount,
-          },
-        })
-        itemIdToPriceMap[code] = copilotPrice
-      } else {
-        logger.warn(
-          'XeroInvoiceSyncService#getPriceIdToXeroItem :: syncProductsAutomatically is disabled. Implement creating a service for this later',
-          item,
-        )
-      }
-    }
-
-    return priceIdToXeroItem
-  }
-
-  /**
-   * @deprecated
-   * @param data
-   * @returns
-   */
-  private async getProductsWithPrice(data: InvoiceCreatedEvent) {
-    logger.info(
-      'SyncedInvoicesService#getProductsWithPrice :: Getting products with price for',
-      data,
-    )
-
-    // Get existing products & prices
-    const lineProductIds = [],
-      linePriceIds = []
-    for (const item of data.lineItems) {
-      item.productId && lineProductIds.push(item.productId)
-      item.priceId && linePriceIds.push(item.priceId)
-    }
-    const products = await this.copilot.getProductsMapById(lineProductIds)
-    const prices = await this.copilot.getPricesMapById(linePriceIds)
-
-    // Get all synced items from db
-    const syncedItemsService = new SyncedItemsService(this.user, this.connection)
-    const syncedXeroItems = await syncedItemsService.getSyncedItemsMapByPriceIds(
-      Object.keys(prices),
-    )
-
-    // Object with key as priceId (guarenteed to be unique), and value as xero item
-    const syncedXeroItemsMap: Record<string, string> = {}
-
-    const itemsToCreate: Item[] = []
-    const itemIdToPriceMap: Record<string, CopilotPrice> = {}
-    for (const item of data.lineItems) {
-      // CASE I: If product is a one-off item (without productId or priceId, skip it)
-      if (!item.productId || !item.priceId) continue
-
       const copilotProduct = products[item.productId]
       const copilotPrice = prices[item.priceId]
+
       logger.info(
-        'XeroInvoiceSyncService#getProductsWithPrice :: Found product and price for lineItem',
+        'XeroInvoiceSyncService#getPriceIdToXeroItem :: Creating new item for lineItem',
         item.description,
         {
           copilotProduct,
           copilotPrice,
         },
       )
-
-      // CASE II: For line item with productId & priceId, if synced product exists use it
-      const syncedRecord = syncedXeroItems[item.priceId]
-      if (syncedRecord) {
-        syncedXeroItemsMap[copilotPrice.id] = z.string().parse(syncedRecord.itemId)
-      } else {
-        const code = genRandomString(12)
-        // CASE III: If synced product doesn't exist, schedule to create it
-        itemsToCreate.push({
-          code,
-          name: copilotProduct.name,
-          description: htmlToText(copilotProduct.description),
-          isPurchased: false,
-          salesDetails: {
-            unitPrice: copilotPrice.amount,
-          },
-        })
-        itemIdToPriceMap[code] = copilotPrice
-      }
+      itemsToCreate.push({
+        code,
+        name: copilotProduct.name,
+        description: htmlToText(copilotProduct.description),
+        isPurchased: false,
+        salesDetails: {
+          unitPrice: copilotPrice.amount,
+        },
+      })
+      itemCodeToPriceMap[code] = copilotPrice
     }
 
+    // Create missing items in Xero
     if (itemsToCreate.length) {
       logger.info(
-        'XeroInvoiceService#getProductsWithPrice :: Did not find synced items. Creating new items and syncing them...',
+        'XeroInvoiceService#getPriceIdToXeroItem :: Did not find these synced items. Creating new items and syncing them...',
         itemsToCreate,
       )
 
       const newlyCreatedItems = await syncedItemsService.createItems(
         itemsToCreate,
-        itemIdToPriceMap,
+        itemCodeToPriceMap,
       )
       for (const item of newlyCreatedItems) {
-        syncedXeroItemsMap[item.code] = z.string().parse(item.itemID)
+        const price = itemCodeToPriceMap[item.code]
+        priceIdToXeroItem[price.id] = item
       }
     }
 
-    return syncedXeroItemsMap
+    return priceIdToXeroItem
   }
 
   private async getOrCreateInvoiceRecord(
