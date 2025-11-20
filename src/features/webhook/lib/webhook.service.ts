@@ -11,6 +11,7 @@ import {
   type WebhookEvent,
 } from '@invoice-sync/types'
 import SyncedItemsService from '@items-sync/lib/SyncedItems.service'
+import SettingsService from '@settings/lib/Settings.service'
 import status from 'http-status'
 import APIError from '@/errors/APIError'
 import logger from '@/lib/logger'
@@ -91,6 +92,14 @@ class WebhookService extends AuthenticatedXeroService {
   private handleProductUpdated = async (eventData: unknown) => {
     logger.info('handleProductUpdated :: Handling product updated for data')
 
+    const isSyncAutomaticallyEnabled = await this.checkAutomaticProductSyncEnabled()
+    if (!isSyncAutomaticallyEnabled) {
+      throw new APIError(
+        'Sync Products Automatically is disabled, cannot create synced item for new price',
+        status.OK,
+      )
+    }
+
     const { id, name, description } = ProductUpdatedEventSchema.parse(eventData)
     const syncedItemsService = new SyncedItemsService(this.user, this.connection)
     const payload = {
@@ -108,10 +117,24 @@ class WebhookService extends AuthenticatedXeroService {
   private handlePriceCreated = async (eventData: unknown) => {
     logger.info('WebhookService#handleInvoiceCreated :: Handling price created')
 
+    const isSyncAutomaticallyEnabled = await this.checkAutomaticProductSyncEnabled()
+    if (!isSyncAutomaticallyEnabled) {
+      throw new APIError(
+        'Sync Products Automatically is disabled, cannot create synced item for new price',
+        status.OK,
+      )
+    }
+
     const data = PriceCreatedEventSchema.parse(eventData)
     const syncedItemsService = new SyncedItemsService(this.user, this.connection)
     const [newPrice] = await syncedItemsService.createSyncedItemsForPrices([data])
     return newPrice
+  }
+
+  private checkAutomaticProductSyncEnabled = async (): Promise<boolean> => {
+    const settingsService = new SettingsService(this.user, this.connection)
+    const settings = await settingsService.getSettings()
+    return settings.syncProductsAutomatically
   }
 }
 
