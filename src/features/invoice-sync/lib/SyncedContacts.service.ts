@@ -51,8 +51,6 @@ class SyncedContactsService extends AuthenticatedXeroService {
       )
 
     let [contact] = await query
-    const sql = query.toSQL()
-    console.log('uuuuuu', sql.sql, sql.params)
 
     // If contact exists, return it and end method. Else, delete existing contact sync to create a new one.
     if (contact) {
