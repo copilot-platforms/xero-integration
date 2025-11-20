@@ -15,6 +15,13 @@
       "when": 1763548740491,
       "tag": "20251119103900_add-additional-sync-types",
       "breakpoints": false
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1763636365147,
+      "tag": "20251120105925_add-user-type-to-synced-contacts",
+      "breakpoints": false
     }
   ]
 }
