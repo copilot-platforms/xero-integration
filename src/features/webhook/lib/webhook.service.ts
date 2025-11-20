@@ -44,6 +44,12 @@ class WebhookService extends AuthenticatedXeroService {
     try {
       return await handler(data.data)
     } catch (e: unknown) {
+      // If its an APIError with status OK, we can just ignore it
+      if (e instanceof APIError && e.status === status.OK) {
+        return
+      }
+
+      // Add sync failure record
       const failedSyncsService = new FailedSyncsService(this.user)
       await failedSyncsService.addFailedSyncRecord(
         this.connection.tenantId,
@@ -134,6 +140,10 @@ class WebhookService extends AuthenticatedXeroService {
   private checkAutomaticProductSyncEnabled = async (): Promise<boolean> => {
     const settingsService = new SettingsService(this.user, this.connection)
     const settings = await settingsService.getSettings()
+    logger.info(
+      'WebhookService#checkAutomaticProductSyncEnabled :: Sync Products Automatically is set to',
+      settings.syncProductsAutomatically,
+    )
     return settings.syncProductsAutomatically
   }
 }
