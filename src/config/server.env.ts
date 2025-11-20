@@ -10,6 +10,9 @@ const ServerEnvSchema = z.object({
   XERO_CALLBACK_URL: z.url(),
   XERO_SCOPES: z.string().min(1),
   VERCEL_ENV: z.string().optional(),
+
+  // Flags
+  FLAG_DISABLE_NOTIFICATION_EMAILS: z.coerce.boolean().default(false),
 })
 
 const env = ServerEnvSchema.parse(process.env)

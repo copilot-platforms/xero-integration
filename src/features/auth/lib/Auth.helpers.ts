@@ -1,6 +1,7 @@
 import 'server-only'
 
 import z from 'zod'
+import env from '@/config/server.env'
 import type { XeroConnection } from '@/db/schema/xeroConnections.schema'
 import { copilotBottleneck } from '@/lib/copilot/bottleneck'
 import type User from '@/lib/copilot/models/User.model'
@@ -26,12 +27,14 @@ export const sendAuthorizationFailedNotification = async (
           title: 'Xero Integration Has Stopped Working',
           body: 'Your Xero integration encountered an error and has stopped syncing. Please reconnect to avoid any disruptions.',
         },
-        email: {
-          header: 'Your Xero Sync has stopped working',
-          subject: 'Your Xero Sync has stopped working',
-          body: 'Your Xero integration encountered an error and has stopped syncing. Please reconnect to avoid any disruptions.',
-          title: 'Reconnect Xero',
-        },
+        email: env.FLAG_DISABLE_NOTIFICATION_EMAILS
+          ? undefined
+          : {
+              header: 'Your Xero Sync has stopped working',
+              subject: 'Your Xero Sync has stopped working',
+              body: 'Your Xero integration encountered an error and has stopped syncing. Please reconnect to avoid any disruptions.',
+              title: 'Reconnect Xero',
+            },
       },
     })
     notificationPromises.push(copilotBottleneck.schedule(() => promise))
