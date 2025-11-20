@@ -270,7 +270,7 @@ class SyncedInvoicesService extends AuthenticatedXeroService {
         description: htmlToText(copilotProduct.description),
         isPurchased: false,
         salesDetails: {
-          unitPrice: copilotPrice.amount,
+          unitPrice: copilotPrice.amount / 100,
         },
       })
       itemCodeToPriceMap[code] = copilotPrice
