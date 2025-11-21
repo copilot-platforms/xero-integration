@@ -1,6 +1,5 @@
 import { defaultSettings } from '@settings/constants/defaults'
 import { and, eq } from 'drizzle-orm'
-import db from '@/db'
 import { getTableFields } from '@/db/db.helpers'
 import { type SettingsFields, settings } from '@/db/schema/settings.schema'
 import logger from '@/lib/logger'
@@ -9,7 +8,7 @@ import AuthenticatedXeroService from '@/lib/xero/AuthenticatedXero.service'
 class SettingsService extends AuthenticatedXeroService {
   async getSettings(): Promise<SettingsFields> {
     logger.info('SettingsService#getSettings :: Getting settings for portalId', this.user.portalId)
-    const [syncSettings] = await db
+    const [syncSettings] = await this.db
       .select(
         getTableFields(settings, [
           'syncProductsAutomatically',
@@ -31,7 +30,7 @@ class SettingsService extends AuthenticatedXeroService {
       return syncSettings
     }
 
-    const [newSyncSettings] = await db.insert(settings).values({
+    const [newSyncSettings] = await this.db.insert(settings).values({
       portalId: this.user.portalId,
       tenantId: this.connection.tenantId,
       // Default sync settings

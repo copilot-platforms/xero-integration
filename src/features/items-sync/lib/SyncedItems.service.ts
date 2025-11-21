@@ -6,7 +6,6 @@ import { and, eq, inArray } from 'drizzle-orm'
 import status from 'http-status'
 import type { Item } from 'xero-node'
 import z from 'zod'
-import db from '@/db'
 import { getTableFields } from '@/db/db.helpers'
 import { syncedItems } from '@/db/schema/syncedItems.schema'
 import APIError from '@/errors/APIError'
@@ -23,7 +22,7 @@ class SyncedItemsService extends AuthenticatedXeroService {
     if (!itemsToCreate.length) return []
 
     const newlyCreatedItems = await this.xero.createItems(this.connection.tenantId, itemsToCreate)
-    await db.insert(syncedItems).values(
+    await this.db.insert(syncedItems).values(
       newlyCreatedItems.map((item) => {
         const price = pricesForCode[item.code]
         const insertPayload = {
@@ -52,7 +51,7 @@ class SyncedItemsService extends AuthenticatedXeroService {
       priceIds,
     )
 
-    const dbMappings = await db
+    const dbMappings = await this.db
       .select(getTableFields(syncedItems, ['productId', 'priceId', 'itemId']))
       .from(syncedItems)
       .where(
@@ -79,7 +78,7 @@ class SyncedItemsService extends AuthenticatedXeroService {
       payload,
     )
 
-    const syncedItemRecords = await db
+    const syncedItemRecords = await this.db
       .select()
       .from(syncedItems)
       .where(
@@ -155,7 +154,7 @@ class SyncedItemsService extends AuthenticatedXeroService {
         return
       }
 
-      await db.insert(syncedItems).values({
+      await this.db.insert(syncedItems).values({
         portalId: this.user.portalId,
         tenantId: this.connection.tenantId,
         productId: item.productId,
@@ -179,7 +178,7 @@ class SyncedItemsService extends AuthenticatedXeroService {
         return
       }
 
-      await db
+      await this.db
         .delete(syncedItems)
         .where(
           and(
