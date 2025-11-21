@@ -1,8 +1,10 @@
 import SyncedAccountsService from '@invoice-sync/lib/SyncedAccounts.service'
+import SyncedInvoicesService from '@invoice-sync/lib/SyncedInvoices.service'
 import type { PaymentSucceededEvent } from '@invoice-sync/types'
 import { and, eq } from 'drizzle-orm'
 import status from 'http-status'
 import type { Payment } from 'xero-node'
+import z from 'zod'
 import { type SyncedPayment, syncedPayments } from '@/db/schema/syncedPayments.schema'
 import APIError from '@/errors/APIError'
 import logger from '@/lib/logger'
@@ -45,11 +47,14 @@ class SyncedPaymentsService extends AuthenticatedXeroService {
       'SyncedPaymentsService#createPlatformExpensePayment :: Creating platform expense payment for',
     )
 
+    const invoicesService = new SyncedInvoicesService(this.user, this.connection)
+    const { invoice } = await invoicesService.getValidatedInvoiceRecord(data.invoiceId)
+
     const accountsService = new SyncedAccountsService(this.user, this.connection)
     const expenseAccount = await accountsService.getOrCreateCopilotExpenseAccount()
     const payment = await this.xero.createExpensePayment(
       this.connection.tenantId,
-      data.invoiceId,
+      z.string().parse(invoice.invoiceID),
       expenseAccount,
       data.feeAmount.paidByPlatform,
     )
