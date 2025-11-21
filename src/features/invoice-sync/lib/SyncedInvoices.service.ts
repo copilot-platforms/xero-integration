@@ -147,10 +147,16 @@ class SyncedInvoicesService extends AuthenticatedXeroService {
     const { invoiceRecord, invoice } = await this.getValidatedInvoiceRecord(copilotInvoiceId)
     const xeroInvoiceId = z.uuid().parse(invoiceRecord.xeroInvoiceId)
 
+    const paymentsService = new SyncedPaymentsService(this.user, this.connection)
+
     if (invoiceRecord.status === 'success') {
-      return logger.info(
-        'SyncedInvoicesService#syncPaidInvoiceToXero :: Skipping successfully paid invoice...',
-      )
+      const pastPayment = await paymentsService.getPaymentForInvoiceId(copilotInvoiceId)
+      if (pastPayment) {
+        return logger.info(
+          'SyncedInvoicesService#syncPaidInvoiceToXero :: Skipping successfully paid invoice with payment',
+          pastPayment,
+        )
+      }
     }
 
     const payment = await this.xero.markInvoicePaid(
@@ -174,7 +180,6 @@ class SyncedInvoicesService extends AuthenticatedXeroService {
             eq(syncedInvoices.copilotInvoiceId, copilotInvoiceId),
           ),
         )
-      const paymentsService = new SyncedPaymentsService(this.user, this.connection)
       paymentsService.setTx(tx)
       await paymentsService.createPayment({
         copilotInvoiceId,
@@ -182,6 +187,7 @@ class SyncedInvoicesService extends AuthenticatedXeroService {
         xeroInvoiceId,
         xeroPaymentId: z.string().parse(payment.paymentID),
       })
+      paymentsService.unsetTx()
     })
 
     return payment
