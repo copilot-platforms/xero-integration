@@ -3,7 +3,6 @@ import 'server-only'
 import { eq } from 'drizzle-orm'
 import type { TokenSet } from 'xero-node'
 import { z } from 'zod'
-import db from '@/db'
 import {
   type XeroConnection,
   type XeroConnectionUpdatePayload,
@@ -19,13 +18,13 @@ class XeroConnectionsService extends BaseService {
       'XeroConnectionsService#getConnectionForWorkspace :: Fetching connection for portalId',
       this.user.portalId,
     )
-    let [connection] = await db
+    let [connection] = await this.db
       .select()
       .from(xeroConnections)
       .where(eq(xeroConnections.portalId, this.user.portalId))
 
     if (!connection) {
-      const newConnection = await db
+      const newConnection = await this.db
         .insert(xeroConnections)
         .values({
           portalId: z.string().min(1).parse(this.user.portalId),
@@ -51,7 +50,7 @@ class XeroConnectionsService extends BaseService {
       payload.tokenSet?.expires_at,
     )
 
-    const connections = await db
+    const connections = await this.db
       .update(xeroConnections)
       .set(payload)
       .where(eq(xeroConnections.portalId, this.user.portalId))
