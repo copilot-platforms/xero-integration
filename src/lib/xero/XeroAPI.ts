@@ -1,12 +1,21 @@
 import 'server-only'
 
 import status from 'http-status'
-import { Invoice, type Item, type TaxRate, type TokenSet, XeroClient } from 'xero-node'
+import {
+  type Account,
+  AccountType,
+  Invoice,
+  type Item,
+  type Payment,
+  type TaxRate,
+  type TokenSet,
+  XeroClient,
+} from 'xero-node'
 import z from 'zod'
 import env from '@/config/server.env'
 import APIError from '@/errors/APIError'
 import logger from '@/lib/logger'
-import { AccountCode } from '@/lib/xero/constants'
+import { AccountCode, EXPENSE_ACCOUNT_NAME } from '@/lib/xero/constants'
 import type {
   ContactCreatePayload,
   CreateInvoicePayload,
@@ -102,7 +111,7 @@ class XeroAPI {
     tenantId: string,
     invoiceID: string,
     amount: number,
-  ): Promise<Invoice | undefined> {
+  ): Promise<Payment | undefined> {
     // Note: We can't just update the invoice status to "PAID", we need to create an actual payment for the invoice
     // Ref: https://developer.xero.com/documentation/api/accounting/payments#post-payments
     const { body } = await this.xero.accountingApi.createPayment(tenantId, {
@@ -111,7 +120,7 @@ class XeroAPI {
       account: { code: AccountCode.SALES },
       amount,
     })
-    return body.payments?.[0].invoice
+    return body.payments?.[0]
   }
 
   async voidInvoice(tenantId: string, invoiceID: string): Promise<Invoice | undefined> {
@@ -210,6 +219,21 @@ class XeroAPI {
 
   async deleteItem(tenantId: string, itemID: string): Promise<void> {
     await this.xero.accountingApi.deleteItem(tenantId, itemID)
+  }
+
+  async getAccounts(tenantId: string): Promise<Account[]> {
+    const { body } = await this.xero.accountingApi.getAccounts(tenantId)
+    return body.accounts || []
+  }
+
+  async createExpenseAccount(tenantId: string): Promise<Account[]> {
+    const { body } = await this.xero.accountingApi.createAccount(tenantId, {
+      name: EXPENSE_ACCOUNT_NAME,
+      code: AccountCode.MERCHANT_FEES,
+      type: AccountType.EXPENSE,
+      description: 'Expense account that is charged for Assembly processing fees',
+    })
+    return body.accounts || []
   }
 }
 
