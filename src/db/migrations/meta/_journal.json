@@ -22,6 +22,13 @@
       "when": 1763636365147,
       "tag": "20251120105925_add-user-type-to-synced-contacts",
       "breakpoints": false
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1763718670668,
+      "tag": "20251121095110_add-synced-payments-table",
+      "breakpoints": false
     }
   ]
 }
