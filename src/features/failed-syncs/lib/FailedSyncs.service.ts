@@ -1,6 +1,5 @@
 import type { ValidWebhookEvent } from '@invoice-sync/types'
 import { and, eq } from 'drizzle-orm'
-import db from '@/db'
 import { failedSyncs } from '@/db/schema/failedSyncs.schema'
 import BaseService from '@/lib/copilot/services/base.service'
 import logger from '@/lib/logger'
@@ -20,7 +19,7 @@ class FailedSyncsService extends BaseService {
       payload,
     )
 
-    const [existingFailedSync] = await db
+    const [existingFailedSync] = await this.db
       .select()
       .from(failedSyncs)
       .where(
@@ -31,14 +30,14 @@ class FailedSyncsService extends BaseService {
         ),
       )
     if (existingFailedSync) {
-      await db
+      await this.db
         .update(failedSyncs)
         .set({
           attempts: existingFailedSync.attempts + 1,
         })
         .where(eq(failedSyncs.id, existingFailedSync.id))
     } else {
-      await db.insert(failedSyncs).values({
+      await this.db.insert(failedSyncs).values({
         portalId: this.user.portalId,
         tenantId,
         resourceId: payload.id,
@@ -57,7 +56,7 @@ class FailedSyncsService extends BaseService {
       recordId,
     )
 
-    await db
+    await this.db
       .delete(failedSyncs)
       .where(
         and(
