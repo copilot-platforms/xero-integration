@@ -2,9 +2,11 @@ import 'server-only'
 
 import FailedSyncsService from '@failed-syncs/lib/FailedSyncs.service'
 import XeroInvoiceSyncService from '@invoice-sync/lib/SyncedInvoices.service'
+import SyncedPaymentsService from '@invoice-sync/lib/SyncedPayments.service'
 import {
   InvoiceCreatedEventSchema,
   InvoiceModifiedEventSchema,
+  PaymentSucceededEventSchema,
   PriceCreatedEventSchema,
   ProductUpdatedEventSchema,
   ValidWebhookEvent,
@@ -28,17 +30,16 @@ class WebhookService extends AuthenticatedXeroService {
     )
     logger.info('WebhookService#handleEvent :: Received webhook event data', data)
 
-    const eventHandlerMap: Record<
-      WebhookEvent['eventType'],
-      (data: unknown) => Promise<object | undefined> | Promise<void>
-    > = {
-      [ValidWebhookEvent.InvoiceCreated]: this.handleInvoiceCreated,
-      [ValidWebhookEvent.InvoicePaid]: this.handleInvoicePaid,
-      [ValidWebhookEvent.InvoiceVoided]: this.handleInvoiceVoided,
-      [ValidWebhookEvent.InvoiceDeleted]: this.handleInvoiceDeleted,
-      [ValidWebhookEvent.ProductUpdated]: this.handleProductUpdated,
-      [ValidWebhookEvent.PriceCreated]: this.handlePriceCreated,
-    }
+    const eventHandlerMap: Record<WebhookEvent['eventType'], (data: unknown) => Promise<unknown>> =
+      {
+        [ValidWebhookEvent.InvoiceCreated]: this.handleInvoiceCreated,
+        [ValidWebhookEvent.InvoicePaid]: this.handleInvoicePaid,
+        [ValidWebhookEvent.InvoiceVoided]: this.handleInvoiceVoided,
+        [ValidWebhookEvent.InvoiceDeleted]: this.handleInvoiceDeleted,
+        [ValidWebhookEvent.ProductUpdated]: this.handleProductUpdated,
+        [ValidWebhookEvent.PriceCreated]: this.handlePriceCreated,
+        [ValidWebhookEvent.PaymentSucceeded]: this.handlePaymentSucceeded,
+      }
 
     const handler = eventHandlerMap[data.eventType]
     try {
@@ -72,7 +73,7 @@ class WebhookService extends AuthenticatedXeroService {
   }
 
   private handleInvoicePaid = async (eventData: unknown) => {
-    await logger.info('WebhookService#handleInvoicePaid :: Handling invoice paid')
+    logger.info('WebhookService#handleInvoicePaid :: Handling invoice paid')
 
     const data = InvoiceModifiedEventSchema.parse(eventData)
     const invoiceSyncService = new XeroInvoiceSyncService(this.user, this.connection)
@@ -88,7 +89,7 @@ class WebhookService extends AuthenticatedXeroService {
   }
 
   private handleInvoiceDeleted = async (eventData: unknown) => {
-    await logger.info('WebhookService#handleInvoiceDeleted :: Handling invoice deleted')
+    logger.info('WebhookService#handleInvoiceDeleted :: Handling invoice deleted')
 
     const data = InvoiceModifiedEventSchema.parse(eventData)
     const invoiceSyncService = new XeroInvoiceSyncService(this.user, this.connection)
@@ -135,6 +136,27 @@ class WebhookService extends AuthenticatedXeroService {
     const syncedItemsService = new SyncedItemsService(this.user, this.connection)
     const [newPrice] = await syncedItemsService.createSyncedItemsForPrices([data])
     return newPrice
+  }
+
+  private handlePaymentSucceeded = async (eventData: unknown) => {
+    logger.info(
+      'WebhookService#handlePaymentSucceeded :: Handling payment succeeded for',
+      eventData,
+    )
+
+    const data = PaymentSucceededEventSchema.parse(eventData)
+    const settingsService = new SettingsService(this.user, this.connection)
+    const { addAbsorbedFees } = await settingsService.getSettings()
+    if (!addAbsorbedFees) {
+      logger.info(
+        'WebhookService#handlePaymentSucceeded :: addAbsorbedFees is disabled, skipping fee addition',
+      )
+    }
+
+    const syncedPaymentsService = new SyncedPaymentsService(this.user, this.connection)
+    const expensePayment = await syncedPaymentsService.createPlatformExpensePayment(data)
+
+    return expensePayment
   }
 
   private checkAutomaticProductSyncEnabled = async (): Promise<boolean> => {
