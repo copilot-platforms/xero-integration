@@ -8,7 +8,6 @@ import { and, eq } from 'drizzle-orm'
 import status from 'http-status'
 import type { Contact } from 'xero-node'
 import z from 'zod'
-import db from '@/db'
 import { SyncedContactUserType, syncedContacts } from '@/db/schema/syncedContacts.schema'
 import APIError from '@/errors/APIError'
 import SettingsService from '@/features/settings/lib/Settings.service'
@@ -35,7 +34,7 @@ class SyncedContactsService extends AuthenticatedXeroService {
       company = await this.copilot.getCompany(z.string().parse(companyId))
     }
 
-    const query = db
+    const query = this.db
       .select({ contactID: syncedContacts.contactId })
       .from(syncedContacts)
       .where(
@@ -60,7 +59,7 @@ class SyncedContactsService extends AuthenticatedXeroService {
         return xeroContact
       }
 
-      await db
+      await this.db
         .delete(syncedContacts)
         .where(
           and(
@@ -105,7 +104,7 @@ class SyncedContactsService extends AuthenticatedXeroService {
     }
 
     const contact = await this.xero.createContact(this.connection.tenantId, contactPayload)
-    await db.insert(syncedContacts).values({
+    await this.db.insert(syncedContacts).values({
       portalId: this.user.portalId,
       clientOrCompanyId: useCompanyName ? companyId : client.id,
       userType: useCompanyName ? SyncedContactUserType.COMPANY : SyncedContactUserType.CLIENT,

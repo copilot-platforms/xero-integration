@@ -1,6 +1,7 @@
 import 'server-only'
 
 import SyncedContactsService from '@invoice-sync/lib/SyncedContacts.service'
+import SyncedPaymentsService from '@invoice-sync/lib/SyncedPayments.service'
 import SyncedTaxRatesService from '@invoice-sync/lib/SyncedTaxRates.service'
 import { serializeLineItems } from '@invoice-sync/lib/serializers'
 import type { InvoiceCreatedEvent } from '@invoice-sync/types'
@@ -9,7 +10,6 @@ import { and, desc, eq } from 'drizzle-orm'
 import status from 'http-status'
 import { Invoice, type Item } from 'xero-node'
 import z from 'zod'
-import db from '@/db'
 import { getTableFields } from '@/db/db.helpers'
 import { type SyncedInvoiceCreatePayload, syncedInvoices } from '@/db/schema/syncedInvoices.schema'
 import APIError from '@/errors/APIError'
@@ -145,12 +145,46 @@ class SyncedInvoicesService extends AuthenticatedXeroService {
     )
 
     const { invoiceRecord, invoice } = await this.getValidatedInvoiceRecord(copilotInvoiceId)
+    const xeroInvoiceId = z.uuid().parse(invoiceRecord.xeroInvoiceId)
 
-    return (await this.xero.markInvoicePaid(
+    if (invoiceRecord.status === 'success') {
+      return logger.info(
+        'SyncedInvoicesService#syncPaidInvoiceToXero :: Skipping successfully paid invoice...',
+      )
+    }
+
+    const payment = await this.xero.markInvoicePaid(
       this.connection.tenantId,
-      z.uuid().parse(invoiceRecord.xeroInvoiceId),
-      invoice.total || 0,
-    )) as Invoice
+      xeroInvoiceId,
+      z.coerce.number().parse(invoice.total),
+    )
+
+    if (!payment) {
+      throw new APIError('Failed to create a payment in Xero', status.INTERNAL_SERVER_ERROR)
+    }
+
+    await this.db.transaction(async (tx) => {
+      await tx
+        .update(syncedInvoices)
+        .set({ status: 'success' })
+        .where(
+          and(
+            eq(syncedInvoices.portalId, this.user.portalId),
+            eq(syncedInvoices.tenantId, this.connection.tenantId),
+            eq(syncedInvoices.copilotInvoiceId, copilotInvoiceId),
+          ),
+        )
+      const paymentsService = new SyncedPaymentsService(this.user, this.connection)
+      paymentsService.setTx(tx)
+      await paymentsService.createPayment({
+        copilotInvoiceId,
+        copilotPaymentId: null,
+        xeroInvoiceId,
+        xeroPaymentId: z.string().parse(payment.paymentID),
+      })
+    })
+
+    return payment
   }
 
   async voidInvoice(copilotInvoiceId: string) {
@@ -185,7 +219,7 @@ class SyncedInvoicesService extends AuthenticatedXeroService {
 
     const selectFields = getTableFields(syncedInvoices, ['createdAt'])
 
-    const [lastSyncedInvoice] = await db
+    const [lastSyncedInvoice] = await this.db
       .select(selectFields)
       .from(syncedInvoices)
       .where(
@@ -314,7 +348,7 @@ class SyncedInvoicesService extends AuthenticatedXeroService {
       'status',
     ])
 
-    const [prevInvoice] = await db
+    const [prevInvoice] = await this.db
       .select(selectFields)
       .from(syncedInvoices)
       .where(
@@ -332,7 +366,7 @@ class SyncedInvoicesService extends AuthenticatedXeroService {
       return prevInvoice
     }
 
-    const [invoice] = await db
+    const [invoice] = await this.db
       .insert(syncedInvoices)
       .values({
         portalId: this.user.portalId,
@@ -356,7 +390,7 @@ class SyncedInvoicesService extends AuthenticatedXeroService {
       syncedInvoice,
       status,
     )
-    const [invoice] = await db
+    const [invoice] = await this.db
       .update(syncedInvoices)
       .set({
         xeroInvoiceId: syncedInvoice?.invoiceID,
