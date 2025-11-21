@@ -2,7 +2,6 @@ import SyncedItemsService from '@items-sync/lib/SyncedItems.service'
 import type { Mappable, ProductMapping } from '@items-sync/types'
 import { and, eq } from 'drizzle-orm'
 import z from 'zod'
-import db from '@/db'
 import { type SyncedItem, syncedItems } from '@/db/schema/syncedItems.schema'
 import logger from '@/lib/logger'
 import AuthenticatedXeroService from '@/lib/xero/AuthenticatedXero.service'
@@ -74,7 +73,7 @@ class ProductMappingsService extends AuthenticatedXeroService {
 
     // Create a map with priceId as key and SyncedItem as value
     const dbMappings = (
-      await db
+      await this.db
         .select()
         .from(syncedItems)
         .where(

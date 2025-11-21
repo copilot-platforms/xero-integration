@@ -9,6 +9,7 @@ export const failedSyncTypeEnum = pgEnum('failed_syncs_type', [
   ValidWebhookEvent.InvoiceDeleted,
   ValidWebhookEvent.ProductUpdated,
   ValidWebhookEvent.PriceCreated,
+  ValidWebhookEvent.PaymentSucceeded,
 ])
 
 export const failedSyncs = pgTable(

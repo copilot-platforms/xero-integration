@@ -10,7 +10,7 @@ import postgres from 'postgres'
 import env from '@/config/server.env'
 import { schema } from '@/db/schema'
 
-type DB = PostgresJsDatabase<typeof schema>
+export type DB = PostgresJsDatabase<typeof schema>
 
 globalThis._drizzleDb ??= drizzle(postgres(env.DATABASE_URL, { prepare: false, debug: true }), {
   casing: 'snake_case',

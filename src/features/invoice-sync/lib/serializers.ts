@@ -1,7 +1,8 @@
 import { calculateTaxAmount } from '@invoice-sync/lib/utils'
 import type { InvoiceCreatedEvent } from '@invoice-sync/types'
 import type { TaxRate, LineItem as XeroLineItem } from 'xero-node'
-import type { ClientResponse } from '@/lib/copilot/types'
+import type { ClientResponse, CompanyResponse } from '@/lib/copilot/types'
+import { buildClientName } from '@/lib/copilot/utils'
 import logger from '@/lib/logger'
 import { AccountCode } from '@/lib/xero/constants'
 import {
@@ -54,11 +55,21 @@ export const serializeLineItems = (
   return xeroLineItems
 }
 
-export const serializeContact = (client: ClientResponse): ContactCreatePayload => {
+export const serializeContactForClient = (client: ClientResponse): ContactCreatePayload => {
   return ContactCreatePayloadSchema.parse({
-    name: `${client.givenName} ${client.familyName}`,
+    name: buildClientName(client),
     firstName: client.givenName,
     lastName: client.familyName,
     emailAddress: client.email,
+  } satisfies ContactCreatePayload)
+}
+
+export const serializeContactForCompany = (
+  company: CompanyResponse,
+  emailAddress: string,
+): ContactCreatePayload => {
+  return ContactCreatePayloadSchema.parse({
+    name: `${company.name}`,
+    emailAddress,
   } satisfies ContactCreatePayload)
 }

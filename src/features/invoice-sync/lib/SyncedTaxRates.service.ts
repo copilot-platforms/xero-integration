@@ -21,10 +21,10 @@ class SyncedTaxRatesService extends AuthenticatedXeroService {
         'SyncedTaxRatesService#getTaxRateForItem :: Tax Rate not found... creating a new one',
       )
       const payload = {
-        name: `Copilot Sales Tax - ${effectiveRate}%`,
+        name: `Assembly Sales Tax - ${effectiveRate}%`,
         taxComponents: [
           {
-            name: `Copilot Sales Tax ${effectiveRate}%`,
+            name: `Assembly Sales Tax ${effectiveRate}%`,
             rate: effectiveRate,
             isCompound: false,
             isNonRecoverable: false,

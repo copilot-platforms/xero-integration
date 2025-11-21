@@ -1,0 +1,42 @@
+import { index, pgTable, uniqueIndex, uuid, varchar } from 'drizzle-orm/pg-core'
+import { createSelectSchema } from 'drizzle-zod'
+import type z from 'zod'
+import { timestamps } from '@/db/db.helpers'
+
+export const syncedPayments = pgTable(
+  'synced_payments',
+  {
+    id: uuid().primaryKey().notNull().defaultRandom(),
+
+    // Workspace ID / Portal ID in Copilot
+    portalId: varchar({ length: 16 }).notNull(),
+
+    // Active Tenant ID for Xero
+    tenantId: uuid().notNull(),
+
+    // Copilot Invoice ID
+    copilotInvoiceId: varchar({ length: 64 }).notNull(),
+
+    // Synced Xero Invoice ID (payment is always linked to an invoice)
+    xeroInvoiceId: uuid().notNull(),
+
+    // Copilot Payment ID
+    copilotPaymentId: varchar({ length: 64 }),
+
+    // Synced Xero Payment ID
+    xeroPaymentId: uuid().notNull(),
+
+    ...timestamps,
+  },
+  (t) => [
+    index('uq_synced_payments_portal_id_tenant_id_copilot_invoice_id').on(
+      t.portalId,
+      t.tenantId,
+      t.copilotInvoiceId,
+    ),
+    uniqueIndex('uq_synced_payments_xero_payment_id').on(t.xeroPaymentId),
+  ],
+)
+
+export const SyncedPaymentSchema = createSelectSchema(syncedPayments)
+export type SyncedPayment = z.infer<typeof SyncedPaymentSchema>
