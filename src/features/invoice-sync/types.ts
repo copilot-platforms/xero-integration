@@ -55,6 +55,27 @@ export const PriceCreatedEventSchema = z.object({
 })
 export type PriceCreatedEvent = z.infer<typeof PriceCreatedEventSchema>
 
+export enum PaymentStatus {
+  PENDING = 'pending',
+  PROCESSING = 'processing',
+  SUCCEEDED = 'succeeded',
+  FAILED = 'failed',
+}
+
+export const PaymentSucceededEventSchema = z.object({
+  id: z.string(),
+  invoiceId: z.string(),
+  status: z.enum(PaymentStatus),
+  paymentMethod: z.string(),
+  brand: z.string(),
+  feeAmount: z.object({
+    paidByPlatform: z.number(),
+    paidByClient: z.number(),
+  }),
+  createdAt: z.iso.datetime(),
+})
+export type PaymentSucceededEvent = z.infer<typeof PaymentSucceededEventSchema>
+
 export enum ValidWebhookEvent {
   InvoiceCreated = 'invoice.created',
   InvoicePaid = 'invoice.paid',
@@ -62,6 +83,7 @@ export enum ValidWebhookEvent {
   InvoiceDeleted = 'invoice.deleted',
   ProductUpdated = 'product.updated',
   PriceCreated = 'price.created',
+  PaymentSucceeded = 'payment.succeeded',
 }
 
 export const InvoiceCreatedWebhookSchema = z.object({
@@ -100,6 +122,11 @@ export const PriceCreatedWebhookSchema = z.object({
 })
 export type PriceCreatedWebhook = z.infer<typeof PriceCreatedWebhookSchema>
 
+export const PaymentSucceededWebhookSchema = z.object({
+  eventType: z.literal(ValidWebhookEvent.PaymentSucceeded),
+  data: PaymentSucceededEventSchema,
+})
+
 export const WebhookEventSchema = z.discriminatedUnion('eventType', [
   InvoiceCreatedWebhookSchema,
   InvoicePaidWebhookSchema,
@@ -107,5 +134,6 @@ export const WebhookEventSchema = z.discriminatedUnion('eventType', [
   InvoiceDeletedWebhookSchema,
   ProductUpdatedWebhookSchema,
   PriceCreatedWebhookSchema,
+  PaymentSucceededWebhookSchema,
 ])
 export type WebhookEvent = z.infer<typeof WebhookEventSchema>

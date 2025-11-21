@@ -181,7 +181,7 @@ class SyncedInvoicesService extends AuthenticatedXeroService {
           ),
         )
       paymentsService.setTx(tx)
-      await paymentsService.createPayment({
+      await paymentsService.createPaymentRecord({
         copilotInvoiceId,
         copilotPaymentId: null,
         xeroInvoiceId,

@@ -123,6 +123,27 @@ class XeroAPI {
     return body.payments?.[0]
   }
 
+  async createExpensePayment(
+    tenantId: string,
+    invoiceID: string,
+    account: Account,
+    amount: number,
+  ): Promise<Payment | undefined> {
+    // Note: We can't just update the invoice status to "PAID", we need to create an actual payment for the invoice
+    // Ref: https://developer.xero.com/documentation/api/accounting/payments#post-payments
+    const { body } = await this.xero.accountingApi.createPayment(tenantId, {
+      invoice: { invoiceID },
+      code: 'ACCPAY',
+      account: {
+        accountID: account.accountID,
+        code: account.code,
+        name: 'Assembly Payment Processing Fees',
+      },
+      amount,
+    })
+    return body.payments?.[0]
+  }
+
   async voidInvoice(tenantId: string, invoiceID: string): Promise<Invoice | undefined> {
     const { body } = await this.xero.accountingApi.updateInvoice(tenantId, invoiceID, {
       invoices: [{ status: Invoice.StatusEnum.VOIDED }],
@@ -226,14 +247,14 @@ class XeroAPI {
     return body.accounts || []
   }
 
-  async createExpenseAccount(tenantId: string): Promise<Account[]> {
+  async createExpenseAccount(tenantId: string): Promise<Account | undefined> {
     const { body } = await this.xero.accountingApi.createAccount(tenantId, {
       name: EXPENSE_ACCOUNT_NAME,
       code: AccountCode.MERCHANT_FEES,
       type: AccountType.EXPENSE,
       description: 'Expense account that is charged for Assembly processing fees',
     })
-    return body.accounts || []
+    return body.accounts?.[0]
   }
 }
 
