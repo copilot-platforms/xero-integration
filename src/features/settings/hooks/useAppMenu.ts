@@ -18,9 +18,15 @@ export const useAppBridge = ({ token }: { token: string }) => {
     })
   }
 
+  // biome-ignore lint/suspicious/useAwait: there is no async action being done here but the type signature requires it
   const downloadCsvAction = async () => {
-    // TODO: In another ticket. Keeping async console.log because the type signature on onClick is for a Promsie
-    await console.info('Downloading...')
+    const url = `/api/sync-logs?token=${token}`
+    const link = document.createElement('a')
+    link.href = url
+    link.download = 'sync-history.csv'
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
   }
 
   let actions: { label: string; icon?: Icons; onClick: () => Promise<void> }[] = []
