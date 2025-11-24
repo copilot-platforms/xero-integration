@@ -4,13 +4,13 @@ import {
   serializeContactForClient,
   serializeContactForCompany,
 } from '@invoice-sync/lib/serializers'
+import SettingsService from '@settings/lib/Settings.service'
 import { and, eq } from 'drizzle-orm'
 import status from 'http-status'
 import type { Contact } from 'xero-node'
 import z from 'zod'
 import { SyncedContactUserType, syncedContacts } from '@/db/schema/syncedContacts.schema'
 import APIError from '@/errors/APIError'
-import SettingsService from '@/features/settings/lib/Settings.service'
 import { CopilotAPI } from '@/lib/copilot/CopilotAPI'
 import type { ClientResponse, CompanyResponse } from '@/lib/copilot/types'
 import { buildClientName } from '@/lib/copilot/utils'
