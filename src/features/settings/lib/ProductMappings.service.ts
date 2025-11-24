@@ -35,9 +35,11 @@ class ProductMappingsService extends AuthenticatedXeroService {
     const syncedItemsService = new SyncedItemsService(this.user, this.connection)
     const mappingRecords = await syncedItemsService.getSyncedItemsMapByPriceIds('all')
 
-    const xeroItems = await this.xero.getItemsMap(this.connection.tenantId)
-    const copilotProducts = await this.copilot.getProductsMapById('all')
-    const copilotPrices = await this.copilot.getPricesMapById('all')
+    const [xeroItems, copilotProducts, copilotPrices] = await Promise.all([
+      this.xero.getItemsMap(this.connection.tenantId),
+      this.copilot.getProductsMapById('all'),
+      this.copilot.getPricesMapById('all'),
+    ])
 
     const mappings = Object.values(copilotPrices)
       // Sort by decreasing createdAt date
