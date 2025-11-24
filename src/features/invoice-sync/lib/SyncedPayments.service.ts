@@ -3,7 +3,7 @@ import SyncedInvoicesService from '@invoice-sync/lib/SyncedInvoices.service'
 import type { PaymentSucceededEvent } from '@invoice-sync/types'
 import { and, eq } from 'drizzle-orm'
 import status from 'http-status'
-import type { Payment } from 'xero-node'
+import { Invoice, type Payment } from 'xero-node'
 import z from 'zod'
 import {
   PaymentUserType,
@@ -13,6 +13,8 @@ import {
 import APIError from '@/errors/APIError'
 import logger from '@/lib/logger'
 import AuthenticatedXeroService from '@/lib/xero/AuthenticatedXero.service'
+import { type CreateInvoicePayload, CreateInvoicePayloadSchema } from '@/lib/xero/types'
+import { datetimeToDate } from '@/utils/date'
 
 class SyncedPaymentsService extends AuthenticatedXeroService {
   async getPaymentForInvoiceId(copilotInvoiceId: string) {
@@ -64,11 +66,30 @@ class SyncedPaymentsService extends AuthenticatedXeroService {
 
     const accountsService = new SyncedAccountsService(this.user, this.connection)
     const expenseAccount = await accountsService.getOrCreateCopilotExpenseAccount()
+
+    // Create an expense invoice
+    const expenseInvoiceDetails = CreateInvoicePayloadSchema.parse({
+      type: Invoice.TypeEnum.ACCREC,
+      invoiceNumber: `${invoice.invoiceNumber}-EXP`,
+      contact: { contactID: invoice.contact?.contactID },
+      dueDate: datetimeToDate(invoice.dueDate as string), // Due date must always be present for an invoice
+      lineItems: [],
+      status: Invoice.StatusEnum.AUTHORISED,
+      date: datetimeToDate(new Date().toISOString()),
+    } satisfies CreateInvoicePayload)
+
+    const expenseInvoice = await this.xero.createInvoice(
+      this.connection.tenantId,
+      expenseInvoiceDetails,
+    )
+
+    // Create an expense payment linked to this expense invoice
     const payment = await this.xero.createExpensePayment(
       this.connection.tenantId,
-      z.string().parse(invoice.invoiceID),
+      z.string().parse(expenseInvoice?.invoiceID),
       expenseAccount,
       data.feeAmount.paidByPlatform / 100,
+      invoice.invoiceID,
     )
     if (!payment) {
       throw new APIError('Failed to create expense payment', status.INTERNAL_SERVER_ERROR)
@@ -78,6 +99,7 @@ class SyncedPaymentsService extends AuthenticatedXeroService {
       payment,
     )
 
+    // Log payment to DB as an expense
     await this.createPaymentRecord(
       {
         copilotInvoiceId: data.invoiceId,
