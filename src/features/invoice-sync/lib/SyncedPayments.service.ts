@@ -76,6 +76,7 @@ class SyncedPaymentsService extends AuthenticatedXeroService {
       dueDate: datetimeToDate(invoice.dueDate as string), // Due date must always be present for an invoice
       lineItems: [
         {
+          accountId: expenseAccount.accountID,
           accountCode: AccountCode.MERCHANT_FEES,
           description: `Assembly Processing Fees for ${invoice.invoiceNumber}`,
           quantity: 1,
