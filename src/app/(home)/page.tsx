@@ -72,11 +72,17 @@ const Home = async ({ searchParams }: PageProps) => {
   const authService = new AuthService(user)
 
   const copilot = new CopilotAPI(user.token)
-  const workspacePromise = copilot.getWorkspace()
-  const connectionPromise = authService.authorizeXeroForCopilotWorkspace(true)
-  const [workspace, connection] = await Promise.all([workspacePromise, connectionPromise])
-  const needsReconnection =
-    !!connection.tokenSet && (connection.tokenSet.expires_at || 0) * 1000 < Date.now()
+  const [connection, workspace] = await Promise.all([
+    authService.authorizeXeroForCopilotWorkspace(true),
+    copilot.getWorkspace(),
+  ])
+
+  const [settings, productMappings, xeroItems, lastSyncedAt] = await Promise.all([
+    getSettings(user, connection),
+    getProductMappings(user, connection),
+    getXeroItems(user, connection),
+    getLastSyncedAt(user, connection),
+  ])
 
   const clientUser = serializeClientUser(user)
   logger.info(
@@ -86,12 +92,8 @@ const Home = async ({ searchParams }: PageProps) => {
     connection.id,
   )
 
-  const [settings, productMappings, xeroItems, lastSyncedAt] = await Promise.all([
-    getSettings(user, connection),
-    getProductMappings(user, connection),
-    getXeroItems(user, connection),
-    getLastSyncedAt(user, connection),
-  ])
+  const needsReconnection =
+    !!connection.tokenSet && (connection.tokenSet.expires_at || 0) * 1000 < Date.now()
 
   return (
     <AuthContextProvider
