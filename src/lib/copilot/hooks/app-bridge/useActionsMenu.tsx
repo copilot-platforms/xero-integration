@@ -1,5 +1,7 @@
+'use client'
+
 import { useEffect, useMemo } from 'react'
-import { DASHBOARD_DOMAIN } from '@/constants/domains'
+import { postMessage } from '@/lib/copilot/hooks/app-bridge'
 import type {
   ActionsMenuPayload,
   Clickable,
@@ -28,7 +30,8 @@ export const useActionsMenu = (actions: Clickable[], config?: Configurable) => {
       })),
     }
 
-    window.parent.postMessage(payload, DASHBOARD_DOMAIN)
+    postMessage(payload)
+
     if (config?.portalUrl) {
       window.parent.postMessage(payload, ensureHttps(config.portalUrl))
     }
@@ -52,7 +55,7 @@ export const useActionsMenu = (actions: Clickable[], config?: Configurable) => {
 
   useEffect(() => {
     const handleUnload = () => {
-      window.parent.postMessage({ type: 'header.actionsMenu', items: [] }, DASHBOARD_DOMAIN)
+      postMessage({ type: 'header.actionsMenu', items: [] })
     }
     addEventListener('beforeunload', handleUnload)
     return () => {

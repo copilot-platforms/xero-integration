@@ -1,3 +1,4 @@
+import { AppMenuTrigger } from '@auth/components/AppBridge'
 import { CalloutSection } from '@auth/components/CalloutSection'
 import { RealtimeXeroConnections } from '@auth/components/RealtimeXeroConnections'
 import { AuthContextProvider } from '@auth/context/AuthContext'
@@ -111,6 +112,7 @@ const Home = async ({ searchParams }: PageProps) => {
       >
         <main className="min-h-[100vh] px-8 pt-6 pb-[54px] sm:px-[100px] lg:px-[220px]">
           <RealtimeXeroConnections user={clientUser} />
+          <AppMenuTrigger token={clientUser.token} />
           <CalloutSection />
           <section>
             <SettingsForm />
