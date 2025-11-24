@@ -5,13 +5,22 @@ import { and, eq } from 'drizzle-orm'
 import status from 'http-status'
 import type { Payment } from 'xero-node'
 import z from 'zod'
-import { type SyncedPayment, syncedPayments } from '@/db/schema/syncedPayments.schema'
+import {
+  PaymentUserType,
+  type SyncedPayment,
+  syncedPayments,
+} from '@/db/schema/syncedPayments.schema'
 import APIError from '@/errors/APIError'
 import logger from '@/lib/logger'
 import AuthenticatedXeroService from '@/lib/xero/AuthenticatedXero.service'
 
 class SyncedPaymentsService extends AuthenticatedXeroService {
   async getPaymentForInvoiceId(copilotInvoiceId: string) {
+    logger.info(
+      'SyncedPaymentsService#createPayment :: Getting payment data from db for',
+      copilotInvoiceId,
+    )
+
     const results = await this.db
       .select()
       .from(syncedPayments)
@@ -20,6 +29,7 @@ class SyncedPaymentsService extends AuthenticatedXeroService {
           eq(syncedPayments.portalId, this.user.portalId),
           eq(syncedPayments.tenantId, this.connection.tenantId),
           eq(syncedPayments.copilotInvoiceId, copilotInvoiceId),
+          eq(syncedPayments.type, PaymentUserType.PAYMENT),
         ),
       )
     logger.info('SyncedPaymentsService#getPaymentForInvoiceId :: Fetched payment', results[0])
@@ -32,6 +42,7 @@ class SyncedPaymentsService extends AuthenticatedXeroService {
       SyncedPayment,
       'copilotInvoiceId' | 'copilotPaymentId' | 'xeroInvoiceId' | 'xeroPaymentId'
     >,
+    type?: PaymentUserType,
   ) {
     logger.info('SyncedPaymentsService#createPayment :: Creating payment for payload', data)
 
@@ -39,6 +50,7 @@ class SyncedPaymentsService extends AuthenticatedXeroService {
       portalId: this.user.portalId,
       tenantId: this.connection.tenantId,
       ...data,
+      type,
     })
   }
 
@@ -56,11 +68,25 @@ class SyncedPaymentsService extends AuthenticatedXeroService {
       this.connection.tenantId,
       z.string().parse(invoice.invoiceID),
       expenseAccount,
-      data.feeAmount.paidByPlatform,
+      data.feeAmount.paidByPlatform / 100,
     )
     if (!payment) {
       throw new APIError('Failed to create expense payment', status.INTERNAL_SERVER_ERROR)
     }
+    logger.info(
+      'SyncedPaymentsService#createPlatformExpensePayment :: Created expense payment',
+      payment,
+    )
+
+    await this.createPaymentRecord(
+      {
+        copilotInvoiceId: data.invoiceId,
+        xeroInvoiceId: z.string().parse(invoice.invoiceID),
+        xeroPaymentId: z.string().parse(payment.paymentID),
+        copilotPaymentId: data.id,
+      },
+      PaymentUserType.EXPENSE,
+    )
 
     logger.info(
       'SyncedPaymentsService#createPlatformExpensePayment :: Created platform expense payment',
