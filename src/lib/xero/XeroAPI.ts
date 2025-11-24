@@ -128,18 +128,20 @@ class XeroAPI {
     invoiceID: string,
     account: Account,
     amount: number,
+    details?: string,
   ): Promise<Payment | undefined> {
     // Note: We can't just update the invoice status to "PAID", we need to create an actual payment for the invoice
     // Ref: https://developer.xero.com/documentation/api/accounting/payments#post-payments
     const { body } = await this.xero.accountingApi.createPayment(tenantId, {
       code: 'ACCPAY',
+      invoice: { invoiceID },
       account: {
         accountID: account.accountID,
         code: account.code,
         name: 'Assembly Payment Processing Fees',
       },
       amount,
-      details: invoiceID,
+      details,
     })
     return body.payments?.[0]
   }
