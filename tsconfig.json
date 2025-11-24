@@ -27,6 +27,7 @@
       "@invoice-sync/*": ["./src/features/invoice-sync/*"],
       "@items-sync/*": ["./src/features/items-sync/*"],
       "@settings/*": ["./src/features/settings/*"],
+      "@sync-logs/*": ["./src/features/sync-logs/*"],
       "@webhook/*": ["./src/features/webhook/*"]
     }
   },

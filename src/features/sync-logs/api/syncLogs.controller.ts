@@ -1,7 +1,7 @@
 import AuthService from '@auth/lib/Auth.service'
+import { SyncLogsService } from '@sync-logs/lib/SyncLogs.service'
 import { type NextRequest, NextResponse } from 'next/server'
 import User from '@/lib/copilot/models/User.model'
-import { SyncLogsService } from '../lib/SyncLogs.service'
 
 export const getSyncLogsCsv = async (req: NextRequest) => {
   const token = req.nextUrl.searchParams.get('token')
