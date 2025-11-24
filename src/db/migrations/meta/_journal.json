@@ -29,6 +29,13 @@
       "when": 1763718670668,
       "tag": "20251121095110_add-synced-payments-table",
       "breakpoints": false
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1763973385957,
+      "tag": "20251124083625_add-additional-sync-type",
+      "breakpoints": false
     }
   ]
 }

@@ -1,7 +1,14 @@
-import { index, pgTable, uniqueIndex, uuid, varchar } from 'drizzle-orm/pg-core'
+import { index, pgEnum, pgTable, uniqueIndex, uuid, varchar } from 'drizzle-orm/pg-core'
 import { createSelectSchema } from 'drizzle-zod'
 import type z from 'zod'
 import { timestamps } from '@/db/db.helpers'
+
+export enum PaymentUserType {
+  PAYMENT = 'payment',
+  EXPENSE = 'expense',
+}
+
+export const userType = pgEnum('synced_payments_payment_type', PaymentUserType)
 
 export const syncedPayments = pgTable(
   'synced_payments',
@@ -25,6 +32,9 @@ export const syncedPayments = pgTable(
 
     // Synced Xero Payment ID
     xeroPaymentId: uuid().notNull(),
+
+    // Payment type
+    type: userType().default(PaymentUserType.PAYMENT),
 
     ...timestamps,
   },
