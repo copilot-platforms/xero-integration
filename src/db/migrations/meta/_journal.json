@@ -36,6 +36,13 @@
       "when": 1763973385957,
       "tag": "20251124083625_add-additional-sync-type",
       "breakpoints": false
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1763988063564,
+      "tag": "20251124124103_add-sync-logs-table",
+      "breakpoints": false
     }
   ]
 }
