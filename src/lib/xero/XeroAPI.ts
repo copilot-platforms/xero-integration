@@ -244,8 +244,13 @@ class XeroAPI {
     await this.xero.accountingApi.deleteItem(tenantId, itemID)
   }
 
-  async getAccounts(tenantId: string): Promise<Account[]> {
-    const { body } = await this.xero.accountingApi.getAccounts(tenantId)
+  async getExpenseAccounts(tenantId: string): Promise<Account[]> {
+    const { body } = await this.xero.accountingApi.getAccounts(
+      tenantId,
+      undefined,
+      'Type=="EXPENSE"', // Filter only for expense accounts
+    )
+    // For any sane Xero tenant, the number of expense accounts should never reach even close to the pageSize
     return body.accounts || []
   }
 
