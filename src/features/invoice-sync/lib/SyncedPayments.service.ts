@@ -13,6 +13,7 @@ import {
 import APIError from '@/errors/APIError'
 import logger from '@/lib/logger'
 import AuthenticatedXeroService from '@/lib/xero/AuthenticatedXero.service'
+import { AccountCode } from '@/lib/xero/constants'
 import { type CreateInvoicePayload, CreateInvoicePayloadSchema } from '@/lib/xero/types'
 import { datetimeToDate } from '@/utils/date'
 
@@ -73,7 +74,15 @@ class SyncedPaymentsService extends AuthenticatedXeroService {
       invoiceNumber: `${invoice.invoiceNumber}-EXP`,
       contact: { contactID: invoice.contact?.contactID },
       dueDate: datetimeToDate(invoice.dueDate as string), // Due date must always be present for an invoice
-      lineItems: [],
+      lineItems: [
+        {
+          accountCode: AccountCode.MERCHANT_FEES,
+          description: `Assembly Processing Fees for ${invoice.invoiceNumber}`,
+          quantity: 1,
+          taxAmount: 0,
+          unitAmount: data.feeAmount.paidByPlatform / 100,
+        },
+      ],
       status: Invoice.StatusEnum.AUTHORISED,
       date: datetimeToDate(new Date().toISOString()),
     } satisfies CreateInvoicePayload)
