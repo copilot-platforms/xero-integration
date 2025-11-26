@@ -29,6 +29,7 @@ class FailedSyncsService extends BaseService {
           eq(failedSyncs.resourceId, payload.id),
         ),
       )
+
     if (existingFailedSync) {
       await this.db
         .update(failedSyncs)

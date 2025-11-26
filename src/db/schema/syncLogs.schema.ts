@@ -9,6 +9,8 @@ import {
   uuid,
   varchar,
 } from 'drizzle-orm/pg-core'
+import { createInsertSchema } from 'drizzle-zod'
+import type z from 'zod'
 import { timestamps } from '@/db/db.helpers'
 
 export enum SyncEventType {
@@ -91,3 +93,12 @@ export const syncLogs = pgTable(
     ),
   ],
 )
+
+export const CreateSyncLogPayloadSchema = createInsertSchema(syncLogs).omit({
+  id: true,
+  portalId: true,
+  tenantId: true,
+  createdAt: true,
+  updatedAt: true,
+})
+export type CreateSyncLogPayload = z.infer<typeof CreateSyncLogPayloadSchema>
