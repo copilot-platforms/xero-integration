@@ -1,7 +1,13 @@
 import dayjs from 'dayjs'
 import { and, desc, eq } from 'drizzle-orm'
 import { json2csv } from 'json-2-csv'
-import { syncLogs } from '@/db/schema/syncLogs.schema'
+import {
+  type CreateSyncLogPayload,
+  type SyncEntityType,
+  type SyncEventType,
+  type SyncStatus,
+  syncLogs,
+} from '@/db/schema/syncLogs.schema'
 import AuthenticatedXeroService from '@/lib/xero/AuthenticatedXero.service'
 
 export class SyncLogsService extends AuthenticatedXeroService {
@@ -38,5 +44,16 @@ export class SyncLogsService extends AuthenticatedXeroService {
     }))
 
     return json2csv(data)
+  }
+
+  async createSyncLog(payload: CreateSyncLogPayload) {
+    await this.db.insert(syncLogs).values({
+      ...payload,
+      status: payload.status as SyncStatus, // drizzle's enum inference issue - this is safe trust me bro
+      eventType: payload.eventType as SyncEventType,
+      entityType: payload.entityType as SyncEntityType,
+      portalId: this.user.portalId,
+      tenantId: this.connection.tenantId,
+    })
   }
 }

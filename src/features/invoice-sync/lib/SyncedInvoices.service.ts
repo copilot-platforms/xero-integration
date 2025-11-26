@@ -12,7 +12,9 @@ import { Invoice, type Item } from 'xero-node'
 import z from 'zod'
 import { getTableFields } from '@/db/db.helpers'
 import { type SyncedInvoiceCreatePayload, syncedInvoices } from '@/db/schema/syncedInvoices.schema'
+import { SyncEntityType, SyncEventType, SyncStatus } from '@/db/schema/syncLogs.schema'
 import APIError from '@/errors/APIError'
+import { SyncLogsService } from '@/features/sync-logs/lib/SyncLogs.service'
 import type { CopilotPrice } from '@/lib/copilot/types'
 import logger from '@/lib/logger'
 import AuthenticatedXeroService from '@/lib/xero/AuthenticatedXero.service'
@@ -25,6 +27,10 @@ import { htmlToText } from '@/utils/html'
 import { genRandomString } from '@/utils/string'
 
 class SyncedInvoicesService extends AuthenticatedXeroService {
+  /**
+   * @core
+   * Core handler for invoice.created that syncs invoice data from Copilot to Xero
+   */
   async syncInvoiceToXero(data: InvoiceCreatedEvent): Promise<{
     copilotInvoiceId: string
     xeroInvoiceId: string | null
@@ -36,11 +42,11 @@ class SyncedInvoicesService extends AuthenticatedXeroService {
     const contactPromise = this.getContact(data)
     const priceIdToXeroItemPromise = this.getPriceIdToXeroItem(data)
 
-    const [taxRate, { contactID }, priceIdToXeroItem] = await Promise.all([
-      taxRatePromise,
-      contactPromise,
-      priceIdToXeroItemPromise,
-    ])
+    const [
+      taxRate,
+      { contactID, emailAddress: customerEmail, name: customerName },
+      priceIdToXeroItem,
+    ] = await Promise.all([taxRatePromise, contactPromise, priceIdToXeroItemPromise])
 
     const lineItems = serializeLineItems(data.lineItems, priceIdToXeroItem, taxRate)
     if (!lineItems.length) {
@@ -85,8 +91,39 @@ class SyncedInvoicesService extends AuthenticatedXeroService {
         syncedInvoice,
         syncedInvoice ? 'success' : 'failed',
       )
+
+      // Add sync log
+      const syncLogsService = new SyncLogsService(this.user, this.connection)
+      await syncLogsService.createSyncLog({
+        entityType: SyncEntityType.INVOICE,
+        eventType: SyncEventType.CREATED,
+        status: SyncStatus.SUCCESS,
+        syncDate: new Date(),
+        amount: String(data.total / 100),
+        taxAmount: String(invoice.lineItems.reduce((a, i) => a + i.taxAmount, 0)),
+        invoiceNumber: data.number,
+        copilotId: data.id,
+        xeroId: syncedInvoice?.invoiceID,
+        customerEmail,
+        customerName,
+      })
     } catch (e: unknown) {
       syncedInvoiceRecord = await this.updateInvoiceRecord(data, undefined, 'failed')
+      const syncLogsService = new SyncLogsService(this.user, this.connection)
+      await syncLogsService.createSyncLog({
+        entityType: SyncEntityType.INVOICE,
+        eventType: SyncEventType.CREATED,
+        status: SyncStatus.FAILED,
+        syncDate: new Date(),
+        amount: String(data.total / 100),
+        taxAmount: String(invoice.lineItems.reduce((a, i) => a + i.taxAmount, 0)), // Doing this instead of using total taxAmount to prevent inconsistencies
+        invoiceNumber: data.number,
+        copilotId: data.id,
+        xeroId: syncedInvoice?.invoiceID,
+        customerEmail,
+        customerName,
+      })
+
       throw new APIError('Failed to store synced invoice record', status.INTERNAL_SERVER_ERROR, e)
     }
 
@@ -138,6 +175,10 @@ class SyncedInvoicesService extends AuthenticatedXeroService {
     return { invoiceRecord, invoice }
   }
 
+  /**
+   * @core
+   * Core handler for invoice.paid that syncs a invoice payment to Xero
+   */
   async syncPaidInvoiceToXero(copilotInvoiceId: string) {
     logger.info(
       'SyncedInvoicesService#syncPaidInvoiceToXero :: Syncing paid invoice to xero:',
