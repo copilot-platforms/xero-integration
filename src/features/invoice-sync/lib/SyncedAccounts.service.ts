@@ -58,18 +58,20 @@ class SyncedAccountsService extends AuthenticatedXeroService {
     let assetAccount = accounts.find((acc) => acc.code === AccountCode.BANK)
 
     // NOTE: We don't have the 'enablePaymentsToAccount' prop in Bank type accounts
-    assetAccount = await this.xero.createFixedAssetsAccount(this.connection.tenantId)
     if (!assetAccount) {
-      throw new APIError(
-        'Failed to create a new expense account in xero',
-        status.INTERNAL_SERVER_ERROR,
+      assetAccount = await this.xero.createFixedAssetsAccount(this.connection.tenantId)
+      if (!assetAccount) {
+        throw new APIError(
+          'Failed to create a new expense account in xero',
+          status.INTERNAL_SERVER_ERROR,
+        )
+      }
+
+      logger.info(
+        'SyncedAccountsService#getOrCreateCopilotAssetAccount :: Created a new expense account:',
+        assetAccount,
       )
     }
-
-    logger.info(
-      'SyncedAccountsService#getOrCreateCopilotAssetAccount :: Created a new expense account:',
-      assetAccount,
-    )
 
     return assetAccount
   }
