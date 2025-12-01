@@ -1,6 +1,7 @@
 import dayjs from 'dayjs'
 import { and, desc, eq, isNotNull } from 'drizzle-orm'
 import { json2csv } from 'json-2-csv'
+import { getTableFields } from '@/db/db.helpers'
 import {
   type CreateSyncLogPayload,
   type SyncEntityType,
@@ -48,7 +49,26 @@ export class SyncLogsService extends AuthenticatedXeroService {
 
   async getCreatedSyncLog(copilotId: string) {
     const [result] = await this.db
-      .select()
+      .select(
+        getTableFields(syncLogs, [
+          'portalId',
+          'tenantId',
+          'syncDate',
+          'eventType',
+          'entityType',
+          'copilotId',
+          'xeroId',
+          'xeroItemName',
+          'invoiceNumber',
+          'customerName',
+          'customerEmail',
+          'amount',
+          'taxAmount',
+          'feeAmount',
+          'productName',
+          'productPrice',
+        ]),
+      )
       .from(syncLogs)
       .where(
         and(
