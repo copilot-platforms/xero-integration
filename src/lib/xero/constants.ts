@@ -2,6 +2,7 @@
 // Ref: https://www.cubesoftware.com/blog/chart-of-accounts
 export enum AccountCode {
   SALES = '4000', // This tracks income generated from business operations, like sales revenue for both products & services
+  BANK = '090',
   MERCHANT_FEES = '6041',
 }
 
@@ -11,3 +12,4 @@ export enum ReportTaxType {
 }
 
 export const EXPENSE_ACCOUNT_NAME = 'Assembly Processing Fees'
+export const ASSET_ACCOUNT_NAME = 'Assembly Processing Fees'
