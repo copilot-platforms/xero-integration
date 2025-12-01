@@ -12,7 +12,7 @@ class SyncedAccountsService extends AuthenticatedXeroService {
       'SyncedAccountsService#getOrCreateCopilotExpenseAccount :: Getting copilot expense account',
     )
 
-    const accounts = await this.xero.getExpenseAccounts(this.connection.tenantId)
+    const accounts = await this.xero.getAccounts(this.connection.tenantId, 'EXPENSE')
     let expenseAccount = accounts.find((acc) => acc.code === AccountCode.MERCHANT_FEES)
 
     // CASE I: Expense account exists
@@ -47,6 +47,31 @@ class SyncedAccountsService extends AuthenticatedXeroService {
     )
 
     return expenseAccount
+  }
+
+  async getOrCreateCopilotAssetAccount(): Promise<Account> {
+    logger.info(
+      'SyncedAccountsService#getOrCreateCopilotAssetAccount :: Getting copilot asset account',
+    )
+
+    const accounts = await this.xero.getAccounts(this.connection.tenantId, 'BANK')
+    let assetAccount = accounts.find((acc) => acc.code === AccountCode.BANK)
+
+    // NOTE: We don't have the 'enablePaymentsToAccount' prop in Bank type accounts
+    assetAccount = await this.xero.createFixedAssetsAccount(this.connection.tenantId)
+    if (!assetAccount) {
+      throw new APIError(
+        'Failed to create a new expense account in xero',
+        status.INTERNAL_SERVER_ERROR,
+      )
+    }
+
+    logger.info(
+      'SyncedAccountsService#getOrCreateCopilotAssetAccount :: Created a new expense account:',
+      assetAccount,
+    )
+
+    return assetAccount
   }
 }
 

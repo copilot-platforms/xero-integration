@@ -4,6 +4,7 @@ import status from 'http-status'
 import {
   type Account,
   AccountType,
+  type BankTransaction,
   Invoice,
   type Item,
   type Payment,
@@ -15,7 +16,7 @@ import z from 'zod'
 import env from '@/config/server.env'
 import APIError from '@/errors/APIError'
 import logger from '@/lib/logger'
-import { AccountCode, EXPENSE_ACCOUNT_NAME } from '@/lib/xero/constants'
+import { AccountCode, ASSET_ACCOUNT_NAME, EXPENSE_ACCOUNT_NAME } from '@/lib/xero/constants'
 import type {
   ContactCreatePayload,
   CreateInvoicePayload,
@@ -24,6 +25,7 @@ import type {
   ValidContact,
 } from '@/lib/xero/types'
 import { getServerUrl } from '@/utils/serverUrl'
+import { genRandomString } from '@/utils/string'
 
 class XeroAPI {
   private readonly xero: XeroClient
@@ -244,11 +246,11 @@ class XeroAPI {
     await this.xero.accountingApi.deleteItem(tenantId, itemID)
   }
 
-  async getExpenseAccounts(tenantId: string): Promise<Account[]> {
+  async getAccounts(tenantId: string, type?: string): Promise<Account[]> {
     const { body } = await this.xero.accountingApi.getAccounts(
       tenantId,
       undefined,
-      'Type=="EXPENSE"', // Filter only for expense accounts
+      type ? `Type=="${type}"` : undefined, // Filter only for type accounts
     )
     // For any sane Xero tenant, the number of expense accounts should never reach even close to the pageSize
     return body.accounts || []
@@ -260,6 +262,17 @@ class XeroAPI {
     })
   }
 
+  async createFixedAssetsAccount(tenantId: string): Promise<Account | undefined> {
+    const { body } = await this.xero.accountingApi.createAccount(tenantId, {
+      name: ASSET_ACCOUNT_NAME,
+      bankAccountNumber: genRandomString(10),
+      code: AccountCode.BANK,
+      type: AccountType.BANK,
+      description: 'Asset account that is charged for Assembly processing fees',
+    })
+    return body.accounts?.[0]
+  }
+
   async createExpenseAccount(tenantId: string): Promise<Account | undefined> {
     const { body } = await this.xero.accountingApi.createAccount(tenantId, {
       name: EXPENSE_ACCOUNT_NAME,
@@ -269,6 +282,24 @@ class XeroAPI {
       enablePaymentsToAccount: true,
     })
     return body.accounts?.[0]
+  }
+
+  async createBankTransaction(tenantId: string, payload: BankTransaction) {
+    const res = await this.xero.accountingApi.createBankTransactions(tenantId, {
+      bankTransactions: [payload],
+    })
+    return res.body.bankTransactions?.[0]
+  }
+
+  async updateBankTransaction(
+    tenantId: string,
+    bankTransactionId: string,
+    payload: BankTransaction,
+  ) {
+    const res = await this.xero.accountingApi.updateBankTransaction(tenantId, bankTransactionId, {
+      bankTransactions: [payload],
+    })
+    return res.body.bankTransactions?.[0]
   }
 }
 

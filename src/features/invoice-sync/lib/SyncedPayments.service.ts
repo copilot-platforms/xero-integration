@@ -1,9 +1,10 @@
 import SyncedAccountsService from '@invoice-sync/lib/SyncedAccounts.service'
 import SyncedInvoicesService from '@invoice-sync/lib/SyncedInvoices.service'
 import type { PaymentSucceededEvent } from '@invoice-sync/types'
+import dayjs from 'dayjs'
 import { and, eq } from 'drizzle-orm'
 import status from 'http-status'
-import { Invoice, type Payment } from 'xero-node'
+import { BankTransaction } from 'xero-node'
 import z from 'zod'
 import {
   PaymentUserType,
@@ -13,9 +14,6 @@ import {
 import APIError from '@/errors/APIError'
 import logger from '@/lib/logger'
 import AuthenticatedXeroService from '@/lib/xero/AuthenticatedXero.service'
-import { AccountCode } from '@/lib/xero/constants'
-import { type CreateInvoicePayload, CreateInvoicePayloadSchema } from '@/lib/xero/types'
-import { datetimeToDate } from '@/utils/date'
 
 class SyncedPaymentsService extends AuthenticatedXeroService {
   async getPaymentForInvoiceId(copilotInvoiceId: string) {
@@ -57,7 +55,7 @@ class SyncedPaymentsService extends AuthenticatedXeroService {
     })
   }
 
-  async createPlatformExpensePayment(data: PaymentSucceededEvent): Promise<Payment> {
+  async createPlatformExpensePayment(data: PaymentSucceededEvent): Promise<BankTransaction> {
     logger.info(
       'SyncedPaymentsService#createPlatformExpensePayment :: Creating platform expense payment for',
     )
@@ -66,55 +64,49 @@ class SyncedPaymentsService extends AuthenticatedXeroService {
     const { invoice } = await invoicesService.getValidatedInvoiceRecord(data.invoiceId)
 
     const accountsService = new SyncedAccountsService(this.user, this.connection)
-    const expenseAccount = await accountsService.getOrCreateCopilotExpenseAccount()
+    const [assetAccount, expenseAccount] = await Promise.all([
+      accountsService.getOrCreateCopilotAssetAccount(),
+      accountsService.getOrCreateCopilotExpenseAccount(),
+    ])
 
     // Create an expense invoice
-    const expenseInvoiceDetails = CreateInvoicePayloadSchema.parse({
-      type: Invoice.TypeEnum.ACCREC,
-      invoiceNumber: `${invoice.invoiceNumber}-EXP`,
-      contact: { contactID: invoice.contact?.contactID },
-      dueDate: datetimeToDate(invoice.dueDate as string), // Due date must always be present for an invoice
+    const transactionPayload = {
+      type: BankTransaction.TypeEnum.SPEND,
+      date: dayjs().format('YYYY-MM-DD'),
+      bankAccount: {
+        code: assetAccount.code,
+      },
       lineItems: [
         {
-          accountId: expenseAccount.accountID,
-          accountCode: AccountCode.MERCHANT_FEES,
-          description: `Assembly Processing Fees for ${invoice.invoiceNumber}`,
+          accountCode: expenseAccount.code,
+          description: 'Assembly Absorbed Fees',
           quantity: 1,
-          taxAmount: 0,
           unitAmount: data.feeAmount.paidByPlatform / 100,
         },
       ],
-      status: Invoice.StatusEnum.AUTHORISED,
-      date: datetimeToDate(new Date().toISOString()),
-    } satisfies CreateInvoicePayload)
+      contact: {
+        name: 'Assembly Processing Fees',
+      },
+      reference: invoice.invoiceID,
+    } satisfies BankTransaction
 
-    const expenseInvoice = await this.xero.createInvoice(
+    const transaction = await this.xero.createBankTransaction(
       this.connection.tenantId,
-      expenseInvoiceDetails,
+      transactionPayload,
     )
-
-    // Create an expense payment linked to this expense invoice
-    const payment = await this.xero.createExpensePayment(
-      this.connection.tenantId,
-      z.string().parse(expenseInvoice?.invoiceID),
-      expenseAccount,
-      data.feeAmount.paidByPlatform / 100,
-      invoice.invoiceID,
-    )
-    if (!payment) {
-      throw new APIError('Failed to create expense payment', status.INTERNAL_SERVER_ERROR)
+    if (!transaction) {
+      throw new APIError(
+        'Failed to create a transaction for Expense account',
+        status.INTERNAL_SERVER_ERROR,
+      )
     }
-    logger.info(
-      'SyncedPaymentsService#createPlatformExpensePayment :: Created expense payment',
-      payment,
-    )
 
     // Log payment to DB as an expense
     await this.createPaymentRecord(
       {
         copilotInvoiceId: data.invoiceId,
         xeroInvoiceId: z.string().parse(invoice.invoiceID),
-        xeroPaymentId: z.string().parse(payment.paymentID),
+        xeroPaymentId: z.string().parse(transaction.bankTransactionID),
         copilotPaymentId: data.id,
       },
       PaymentUserType.EXPENSE,
@@ -122,9 +114,9 @@ class SyncedPaymentsService extends AuthenticatedXeroService {
 
     logger.info(
       'SyncedPaymentsService#createPlatformExpensePayment :: Created platform expense payment',
-      payment,
+      transaction,
     )
-    return payment
+    return transaction
   }
 }
 
