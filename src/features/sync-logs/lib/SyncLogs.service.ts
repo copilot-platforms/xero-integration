@@ -1,11 +1,11 @@
 import dayjs from 'dayjs'
-import { and, desc, eq } from 'drizzle-orm'
+import { and, desc, eq, isNotNull } from 'drizzle-orm'
 import { json2csv } from 'json-2-csv'
 import {
   type CreateSyncLogPayload,
   type SyncEntityType,
   type SyncEventType,
-  type SyncStatus,
+  SyncStatus,
   syncLogs,
 } from '@/db/schema/syncLogs.schema'
 import AuthenticatedXeroService from '@/lib/xero/AuthenticatedXero.service'
@@ -44,6 +44,24 @@ export class SyncLogsService extends AuthenticatedXeroService {
     }))
 
     return json2csv(data)
+  }
+
+  async getCreatedSyncLog(copilotId: string) {
+    const [result] = await this.db
+      .select()
+      .from(syncLogs)
+      .where(
+        and(
+          eq(syncLogs.portalId, this.user.portalId),
+          eq(syncLogs.tenantId, this.connection.tenantId),
+          eq(syncLogs.copilotId, copilotId),
+          eq(syncLogs.status, SyncStatus.SUCCESS),
+          isNotNull(syncLogs.customerEmail),
+        ),
+      )
+      .orderBy(desc(syncLogs.createdAt))
+      .limit(1)
+    return result
   }
 
   async createSyncLog(payload: CreateSyncLogPayload) {

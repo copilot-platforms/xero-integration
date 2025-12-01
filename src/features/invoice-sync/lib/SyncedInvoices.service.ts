@@ -107,24 +107,22 @@ class SyncedInvoicesService extends AuthenticatedXeroService {
         customerEmail,
         customerName,
       })
-    } catch (e: unknown) {
+    } catch (error: unknown) {
       syncedInvoiceRecord = await this.updateInvoiceRecord(data, undefined, 'failed')
-      const syncLogsService = new SyncLogsService(this.user, this.connection)
-      await syncLogsService.createSyncLog({
-        entityType: SyncEntityType.INVOICE,
-        eventType: SyncEventType.CREATED,
-        status: SyncStatus.FAILED,
-        syncDate: new Date(),
-        amount: String(data.total / 100),
-        taxAmount: String(invoice.lineItems.reduce((a, i) => a + i.taxAmount, 0)), // Doing this instead of using total taxAmount to prevent inconsistencies
-        invoiceNumber: data.number,
-        copilotId: data.id,
-        xeroId: syncedInvoice?.invoiceID,
-        customerEmail,
-        customerName,
+      throw new APIError('Failed to store synced invoice record', status.INTERNAL_SERVER_ERROR, {
+        error,
+        failedSyncLogPayload: {
+          entityType: SyncEntityType.INVOICE,
+          eventType: SyncEventType.CREATED,
+          amount: String(data.total / 100),
+          taxAmount: String(invoice.lineItems.reduce((a, i) => a + i.taxAmount, 0)), // Doing this instead of using total taxAmount to prevent inconsistencies
+          invoiceNumber: data.number,
+          copilotId: data.id,
+          xeroId: syncedInvoice?.invoiceID,
+          customerEmail,
+          customerName,
+        },
       })
-
-      throw new APIError('Failed to store synced invoice record', status.INTERNAL_SERVER_ERROR, e)
     }
 
     logger.info(
@@ -190,6 +188,9 @@ class SyncedInvoicesService extends AuthenticatedXeroService {
 
     const paymentsService = new SyncedPaymentsService(this.user, this.connection)
 
+    const syncLogsService = new SyncLogsService(this.user, this.connection)
+    const prevSyncLog = await syncLogsService.getCreatedSyncLog(copilotInvoiceId)
+
     if (invoiceRecord.status === 'success') {
       const pastPayment = await paymentsService.getPaymentForInvoiceId(copilotInvoiceId)
       if (pastPayment) {
@@ -200,62 +201,143 @@ class SyncedInvoicesService extends AuthenticatedXeroService {
       }
     }
 
-    const payment = await this.xero.markInvoicePaid(
-      this.connection.tenantId,
-      xeroInvoiceId,
-      z.coerce.number().parse(invoice.total),
-    )
-
-    if (!payment) {
-      throw new APIError('Failed to create a payment in Xero', status.INTERNAL_SERVER_ERROR)
-    }
-
-    await this.db.transaction(async (tx) => {
-      await tx
-        .update(syncedInvoices)
-        .set({ status: 'success' })
-        .where(
-          and(
-            eq(syncedInvoices.portalId, this.user.portalId),
-            eq(syncedInvoices.tenantId, this.connection.tenantId),
-            eq(syncedInvoices.copilotInvoiceId, copilotInvoiceId),
-          ),
-        )
-      paymentsService.setTx(tx)
-      await paymentsService.createPaymentRecord({
-        copilotInvoiceId,
-        copilotPaymentId: null,
+    try {
+      const payment = await this.xero.markInvoicePaid(
+        this.connection.tenantId,
         xeroInvoiceId,
-        xeroPaymentId: z.string().parse(payment.paymentID),
-      })
-      paymentsService.unsetTx()
-    })
+        z.coerce.number().parse(invoice.total),
+      )
 
-    return payment
+      if (!payment) {
+        throw new APIError('Failed to create a payment in Xero', status.INTERNAL_SERVER_ERROR)
+      }
+
+      await this.db.transaction(async (tx) => {
+        await tx
+          .update(syncedInvoices)
+          .set({ status: 'success' })
+          .where(
+            and(
+              eq(syncedInvoices.portalId, this.user.portalId),
+              eq(syncedInvoices.tenantId, this.connection.tenantId),
+              eq(syncedInvoices.copilotInvoiceId, copilotInvoiceId),
+            ),
+          )
+        paymentsService.setTx(tx)
+        await paymentsService.createPaymentRecord({
+          copilotInvoiceId,
+          copilotPaymentId: null,
+          xeroInvoiceId,
+          xeroPaymentId: z.string().parse(payment.paymentID),
+        })
+        paymentsService.unsetTx()
+
+        // Create sync log
+        syncLogsService.setTx(tx)
+        await syncLogsService.createSyncLog({
+          ...prevSyncLog,
+          eventType: SyncEventType.PAID,
+          status: SyncStatus.SUCCESS,
+          syncDate: new Date(),
+        })
+        syncLogsService.unsetTx()
+      })
+
+      return payment
+    } catch (error: unknown) {
+      throw new APIError('Failed to sync invoice payment', status.INTERNAL_SERVER_ERROR, {
+        error,
+        failedSyncLogPayload: {
+          ...prevSyncLog,
+          entityType: SyncEntityType.INVOICE,
+          eventType: SyncEventType.PAID,
+          amount: String(invoice.total || 0),
+          copilotId: copilotInvoiceId,
+          xeroId: invoice.invoiceID,
+        },
+      })
+    }
   }
 
+  /**
+   * @core
+   * Core handler for invoice.voided that syncs the voiding of an invoice in Copilot
+   * to Xero
+   * @param copilotInvoiceId
+   * @returns
+   */
   async voidInvoice(copilotInvoiceId: string) {
     logger.info('SyncedInvoicesService#voidInvoice :: Voiding invoice in xero:', copilotInvoiceId)
 
     const { invoiceRecord } = await this.getValidatedInvoiceRecord(copilotInvoiceId)
 
-    return await this.xero.voidInvoice(
-      this.connection.tenantId,
-      z.uuid().parse(invoiceRecord.xeroInvoiceId),
-    )
+    const syncLogsService = new SyncLogsService(this.user, this.connection)
+    const prevSyncLog = await syncLogsService.getCreatedSyncLog(copilotInvoiceId)
+
+    try {
+      const voidedInvoice = await this.xero.voidInvoice(
+        this.connection.tenantId,
+        z.uuid().parse(invoiceRecord.xeroInvoiceId),
+      )
+
+      // Add to sync log
+      await syncLogsService.createSyncLog({
+        ...prevSyncLog,
+        eventType: SyncEventType.VOIDED,
+        status: SyncStatus.SUCCESS,
+        syncDate: new Date(),
+      })
+
+      return voidedInvoice
+    } catch (error: unknown) {
+      throw new APIError('Failed to void invoice', status.INTERNAL_SERVER_ERROR, {
+        error,
+        failedSyncLogPayload: {
+          ...prevSyncLog,
+          eventType: SyncEventType.VOIDED,
+        },
+      })
+    }
   }
 
+  /**
+   * @core
+   * Core handler for invoice.deleted that syncs the deletion of a voided invoice in Copilot
+   * to Xero
+   */
   async deleteInvoice(copilotInvoiceId: string) {
     logger.info(
       'SyncedInvoicesService#deleteInvoice :: Deleting invoice in xero:',
       copilotInvoiceId,
     )
+    const syncLogsService = new SyncLogsService(this.user, this.connection)
+    const prevSyncLog = await syncLogsService.getCreatedSyncLog(copilotInvoiceId)
 
-    const { invoiceRecord } = await this.getValidatedInvoiceRecord(copilotInvoiceId)
-    return await this.xero.deleteInvoice(
-      this.connection.tenantId,
-      z.uuid().parse(invoiceRecord.xeroInvoiceId),
-    )
+    try {
+      const { invoiceRecord } = await this.getValidatedInvoiceRecord(copilotInvoiceId)
+      const deletedInvoice = await this.xero.deleteInvoice(
+        this.connection.tenantId,
+        z.uuid().parse(invoiceRecord.xeroInvoiceId),
+      )
+
+      // Add to sync log
+      await syncLogsService.createSyncLog({
+        ...prevSyncLog,
+        eventType: SyncEventType.DELETED,
+        status: SyncStatus.SUCCESS,
+        syncDate: new Date(),
+      })
+
+      return deletedInvoice
+    } catch (error: unknown) {
+      throw new APIError('Failed to sync invoice deletion', status.INTERNAL_SERVER_ERROR, {
+        error,
+        failedSyncLogPayload: {
+          ...prevSyncLog,
+          eventType: SyncEventType.DELETED,
+        },
+      })
+    }
   }
 
   async getLastSyncedAt(): Promise<Date | null> {
