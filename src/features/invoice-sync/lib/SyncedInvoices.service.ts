@@ -15,7 +15,6 @@ import { type SyncedInvoiceCreatePayload, syncedInvoices } from '@/db/schema/syn
 import { SyncEntityType, SyncEventType, SyncStatus } from '@/db/schema/syncLogs.schema'
 import APIError from '@/errors/APIError'
 import { SyncLogsService } from '@/features/sync-logs/lib/SyncLogs.service'
-import type { CopilotPrice } from '@/lib/copilot/types'
 import logger from '@/lib/logger'
 import AuthenticatedXeroService from '@/lib/xero/AuthenticatedXero.service'
 import {
@@ -23,8 +22,6 @@ import {
   type CreateInvoicePayload as InvoiceCreatePayload,
 } from '@/lib/xero/types'
 import { datetimeToDate } from '@/utils/date'
-import { htmlToText } from '@/utils/html'
-import { genRandomString } from '@/utils/string'
 
 class SyncedInvoicesService extends AuthenticatedXeroService {
   /**
@@ -389,17 +386,24 @@ class SyncedInvoicesService extends AuthenticatedXeroService {
     )
 
     const syncedItemsService = new SyncedItemsService(this.user, this.connection)
-    const [xeroItems, syncedItemsMap, products, prices] = await Promise.all([
+    const [xeroItems, syncedItemsMap] = await Promise.all([
       this.xero.getItems(this.connection.tenantId),
       syncedItemsService.getSyncedItemsMapByPriceIds('all'),
-      this.copilot.getProductsMapById('all'),
-      this.copilot.getPricesMapById('all'),
     ])
+    // const [xeroItems, syncedItemsMap, products, prices] = await Promise.all([
+    //   this.xero.getItems(this.connection.tenantId),
+    //   syncedItemsService.getSyncedItemsMapByPriceIds('all'),
+    //   this.copilot.getProductsMapById('all'),
+    //   this.copilot.getPricesMapById('all'),
+    // ])
 
     const priceIdToXeroItem: Record<string, Item> = {}
 
-    const itemsToCreate: Item[] = []
-    const itemCodeToPriceMap: Record<string, CopilotPrice> = {}
+    // NOTE: IMPORTANT:
+    // Uncomment commented lines if we want previously unsynced items to create new items on invoice creation
+
+    // const itemsToCreate: Item[] = []
+    // const itemCodeToPriceMap: Record<string, CopilotPrice> = {}
 
     for (const item of data.lineItems) {
       if (!item.productId || !item.priceId) continue
@@ -410,51 +414,51 @@ class SyncedInvoicesService extends AuthenticatedXeroService {
         const xeroItem = xeroItems.find((i) => i.itemID === matchedXeroItemId)
         if (xeroItem) {
           priceIdToXeroItem[item.priceId] = xeroItem
-          continue
+          // continue
         }
       }
 
       // CASE II: If synced product doesn't exist, create new ones
-      const code = genRandomString(12)
-      const copilotProduct = products[item.productId]
-      const copilotPrice = prices[item.priceId]
-
-      logger.info(
-        'XeroInvoiceSyncService#getPriceIdToXeroItem :: Creating new item for lineItem',
-        item.description,
-        {
-          copilotProduct,
-          copilotPrice,
-        },
-      )
-      itemsToCreate.push({
-        code,
-        name: copilotProduct.name,
-        description: htmlToText(copilotProduct.description),
-        isPurchased: false,
-        salesDetails: {
-          unitPrice: copilotPrice.amount / 100,
-        },
-      })
-      itemCodeToPriceMap[code] = copilotPrice
+      // const code = genRandomString(12)
+      // const copilotProduct = products[item.productId]
+      // const copilotPrice = prices[item.priceId]
+      //
+      // logger.info(
+      //   'XeroInvoiceSyncService#getPriceIdToXeroItem :: Creating new item for lineItem',
+      //   item.description,
+      //   {
+      //     copilotProduct,
+      //     copilotPrice,
+      //   },
+      // )
+      // itemsToCreate.push({
+      //   code,
+      //   name: copilotProduct.name,
+      //   description: htmlToText(copilotProduct.description),
+      //   isPurchased: false,
+      //   salesDetails: {
+      //     unitPrice: copilotPrice.amount / 100,
+      //   },
+      // })
+      // itemCodeToPriceMap[code] = copilotPrice
     }
 
     // Create missing items in Xero
-    if (itemsToCreate.length) {
-      logger.info(
-        'XeroInvoiceService#getPriceIdToXeroItem :: Did not find these synced items. Creating new items and syncing them...',
-        itemsToCreate,
-      )
-
-      const newlyCreatedItems = await syncedItemsService.createItems(
-        itemsToCreate,
-        itemCodeToPriceMap,
-      )
-      for (const item of newlyCreatedItems) {
-        const price = itemCodeToPriceMap[item.code]
-        priceIdToXeroItem[price.id] = item
-      }
-    }
+    // if (itemsToCreate.length) {
+    //   logger.info(
+    //     'XeroInvoiceService#getPriceIdToXeroItem :: Did not find these synced items. Creating new items and syncing them...',
+    //     itemsToCreate,
+    //   )
+    //
+    //   const newlyCreatedItems = await syncedItemsService.createItems(
+    //     itemsToCreate,
+    //     itemCodeToPriceMap,
+    //   )
+    //   for (const item of newlyCreatedItems) {
+    //     const price = itemCodeToPriceMap[item.code]
+    //     priceIdToXeroItem[price.id] = item
+    //   }
+    // }
 
     return priceIdToXeroItem
   }
