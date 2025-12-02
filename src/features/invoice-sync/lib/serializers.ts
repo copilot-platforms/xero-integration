@@ -25,9 +25,7 @@ export const serializeLineItems = (
 
   const xeroLineItems: LineItem[] = []
   for (const item of copilotItems) {
-    if (!item.priceId) continue
-
-    const xeroItem = priceIdToXeroItem[item.priceId]
+    const xeroItem = item.priceId ? priceIdToXeroItem[item.priceId] : undefined
 
     const payload = {
       // NOTE: Both lineItemID and itemCode need to be provided for an invoice item to map to an item in Xero
