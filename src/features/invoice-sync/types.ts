@@ -11,7 +11,7 @@ export const InvoiceCreatedEventSchema = z.object({
   collectionMethod: z.enum(['sendInvoice']),
   createdAt: z.iso.datetime(),
   currency: z.string(),
-  dueDate: z.iso.datetime(),
+  dueDate: z.iso.datetime().default(new Date().toISOString()), // default is for charge client option
   fileUrl: z.string(),
   id: z.string(),
   lineItems: z.array(
