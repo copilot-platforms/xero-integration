@@ -24,6 +24,7 @@ import {
   type CreateInvoicePayload as InvoiceCreatePayload,
 } from '@/lib/xero/types'
 import { datetimeToDate } from '@/utils/date'
+import SyncedAccountsService from './SyncedAccounts.service'
 
 class SyncedInvoicesService extends AuthenticatedXeroService {
   /**
@@ -223,6 +224,9 @@ class SyncedInvoicesService extends AuthenticatedXeroService {
     }
 
     try {
+      const syncedAccountsService = new SyncedAccountsService(this.user, this.connection)
+      await syncedAccountsService.getOrCreateCopilotSalesAccount()
+
       const payment = await this.xero.markInvoicePaid(
         this.connection.tenantId,
         xeroInvoiceId,

@@ -16,7 +16,12 @@ import z from 'zod'
 import env from '@/config/server.env'
 import APIError from '@/errors/APIError'
 import logger from '@/lib/logger'
-import { AccountCode, ASSET_ACCOUNT_NAME, EXPENSE_ACCOUNT_NAME } from '@/lib/xero/constants'
+import {
+  AccountCode,
+  ASSET_ACCOUNT_NAME,
+  EXPENSE_ACCOUNT_NAME,
+  SALES_ACCOUNT_NAME,
+} from '@/lib/xero/constants'
 import type {
   ContactCreatePayload,
   CreateInvoicePayload,
@@ -256,7 +261,7 @@ class XeroAPI {
     return body.accounts || []
   }
 
-  async makeAccountPaymentReceivable(tenantId: string, accountId: string) {
+  async enablePaymentsForAccount(tenantId: string, accountId: string) {
     await this.xero.accountingApi.updateAccount(tenantId, accountId, {
       accounts: [{ enablePaymentsToAccount: true }],
     })
@@ -269,6 +274,17 @@ class XeroAPI {
       code: AccountCode.BANK,
       type: AccountType.BANK,
       description: 'Asset account that is charged for Assembly processing fees',
+    })
+    return body.accounts?.[0]
+  }
+
+  async createSalesAccount(tenantId: string): Promise<Account | undefined> {
+    const { body } = await this.xero.accountingApi.createAccount(tenantId, {
+      name: SALES_ACCOUNT_NAME,
+      code: AccountCode.SALES,
+      type: AccountType.REVENUE,
+      description: 'Revenue from selling goods or products.',
+      enablePaymentsToAccount: true,
     })
     return body.accounts?.[0]
   }
