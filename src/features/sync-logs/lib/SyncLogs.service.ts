@@ -1,11 +1,11 @@
 import dayjs from 'dayjs'
-import { and, desc, eq, isNotNull } from 'drizzle-orm'
+import { and, desc, eq } from 'drizzle-orm'
 import { json2csv } from 'json-2-csv'
 import { getTableFields } from '@/db/db.helpers'
 import {
   type CreateSyncLogPayload,
-  type SyncEntityType,
-  type SyncEventType,
+  SyncEntityType,
+  SyncEventType,
   SyncStatus,
   syncLogs,
 } from '@/db/schema/syncLogs.schema'
@@ -30,24 +30,24 @@ export class SyncLogsService extends AuthenticatedXeroService {
       event_type: log.eventType,
       status: log.status,
       entity_type: log.entityType,
-      assembly_id: log.copilotId,
-      xero_id: log.xeroId,
-      invoice_number: log.invoiceNumber,
-      customer_name: log.customerName,
-      customer_email: log.customerEmail,
-      amount: log.amount,
-      tax_amount: log.taxAmount,
-      fee_amount: log.feeAmount,
-      product_name: log.productName,
-      product_price: log.productPrice,
-      xero_item_name: log.xeroItemName,
-      error_message: log.errorMessage,
+      assembly_id: log.copilotId ?? '',
+      xero_id: log.xeroId ?? '',
+      invoice_number: log.invoiceNumber ?? '',
+      customer_name: log.customerName ?? '',
+      customer_email: log.customerEmail ?? '',
+      amount: log.amount ?? '',
+      tax_amount: log.taxAmount ?? '',
+      fee_amount: log.feeAmount ?? '',
+      product_name: log.productName ?? '',
+      product_price: log.productPrice ?? '',
+      xero_item_name: log.xeroItemName ?? '',
+      error_message: log.errorMessage ?? '',
     }))
 
     return json2csv(data)
   }
 
-  async getCreatedSyncLog(copilotId: string) {
+  async getInvoiceCreatedSyncLog(copilotId: string) {
     const [result] = await this.db
       .select(
         getTableFields(syncLogs, [
@@ -76,7 +76,8 @@ export class SyncLogsService extends AuthenticatedXeroService {
           eq(syncLogs.tenantId, this.connection.tenantId),
           eq(syncLogs.copilotId, copilotId),
           eq(syncLogs.status, SyncStatus.SUCCESS),
-          isNotNull(syncLogs.customerEmail),
+          eq(syncLogs.entityType, SyncEntityType.INVOICE),
+          eq(syncLogs.eventType, SyncEventType.CREATED),
         ),
       )
       .orderBy(desc(syncLogs.createdAt))

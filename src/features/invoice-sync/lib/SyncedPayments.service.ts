@@ -11,7 +11,9 @@ import {
   type SyncedPayment,
   syncedPayments,
 } from '@/db/schema/syncedPayments.schema'
+import { SyncEntityType, SyncEventType, SyncStatus } from '@/db/schema/syncLogs.schema'
 import APIError from '@/errors/APIError'
+import { SyncLogsService } from '@/features/sync-logs/lib/SyncLogs.service'
 import logger from '@/lib/logger'
 import AuthenticatedXeroService from '@/lib/xero/AuthenticatedXero.service'
 
@@ -56,67 +58,97 @@ class SyncedPaymentsService extends AuthenticatedXeroService {
   }
 
   async createPlatformExpensePayment(data: PaymentSucceededEvent): Promise<BankTransaction> {
-    logger.info(
-      'SyncedPaymentsService#createPlatformExpensePayment :: Creating platform expense payment for',
-    )
+    try {
+      logger.info(
+        'SyncedPaymentsService#createPlatformExpensePayment :: Creating platform expense payment for',
+      )
 
-    const invoicesService = new SyncedInvoicesService(this.user, this.connection)
-    const { invoice } = await invoicesService.getValidatedInvoiceRecord(data.invoiceId)
+      const invoicesService = new SyncedInvoicesService(this.user, this.connection)
+      const { invoice } = await invoicesService.getValidatedInvoiceRecord(data.invoiceId)
 
-    const accountsService = new SyncedAccountsService(this.user, this.connection)
-    const [assetAccount, expenseAccount] = await Promise.all([
-      accountsService.getOrCreateCopilotAssetAccount(),
-      accountsService.getOrCreateCopilotExpenseAccount(),
-    ])
+      const accountsService = new SyncedAccountsService(this.user, this.connection)
+      const [assetAccount, expenseAccount] = await Promise.all([
+        accountsService.getOrCreateCopilotAssetAccount(),
+        accountsService.getOrCreateCopilotExpenseAccount(),
+      ])
 
-    // Create an expense invoice
-    const transactionPayload = {
-      type: BankTransaction.TypeEnum.SPEND,
-      date: dayjs().format('YYYY-MM-DD'),
-      bankAccount: {
-        code: assetAccount.code,
-      },
-      lineItems: [
-        {
-          accountCode: expenseAccount.code,
-          description: 'Assembly Absorbed Fees',
-          quantity: 1,
-          unitAmount: data.feeAmount.paidByPlatform / 100,
+      // Create an expense invoice
+      const transactionPayload = {
+        type: BankTransaction.TypeEnum.SPEND,
+        date: dayjs().format('YYYY-MM-DD'),
+        bankAccount: {
+          code: assetAccount.code,
         },
-      ],
-      contact: {
-        name: 'Assembly Processing Fees',
-      },
-      reference: invoice.invoiceID,
-    } satisfies BankTransaction
+        lineItems: [
+          {
+            accountCode: expenseAccount.code,
+            description: 'Assembly Absorbed Fees',
+            quantity: 1,
+            unitAmount: data.feeAmount.paidByPlatform / 100,
+          },
+        ],
+        contact: {
+          name: 'Assembly Processing Fees',
+        },
+        reference: invoice.invoiceID,
+      } satisfies BankTransaction
 
-    const transaction = await this.xero.createBankTransaction(
-      this.connection.tenantId,
-      transactionPayload,
-    )
-    if (!transaction) {
+      const transaction = await this.xero.createBankTransaction(
+        this.connection.tenantId,
+        transactionPayload,
+      )
+      if (!transaction) {
+        throw new APIError(
+          'Failed to create a transaction for Expense account',
+          status.INTERNAL_SERVER_ERROR,
+        )
+      }
+
+      // Log payment to DB as an expense
+      await this.createPaymentRecord(
+        {
+          copilotInvoiceId: data.invoiceId,
+          xeroInvoiceId: z.string().parse(invoice.invoiceID),
+          xeroPaymentId: z.string().parse(transaction.bankTransactionID),
+          copilotPaymentId: data.id,
+        },
+        PaymentUserType.EXPENSE,
+      )
+
+      logger.info(
+        'SyncedPaymentsService#createPlatformExpensePayment :: Created platform expense payment',
+        transaction,
+      )
+
+      const syncLogsService = new SyncLogsService(this.user, this.connection)
+      await syncLogsService.createSyncLog({
+        entityType: SyncEntityType.EXPENSE,
+        eventType: SyncEventType.CREATED,
+        status: SyncStatus.SUCCESS,
+        syncDate: new Date(),
+        copilotId: data.invoiceId,
+        xeroId: transaction.bankTransactionID,
+        amount: String(data.feeAmount.paidByPlatform / 100),
+        feeAmount: String(data.feeAmount.paidByPlatform / 100),
+      })
+
+      return transaction
+    } catch (error: unknown) {
       throw new APIError(
-        'Failed to create a transaction for Expense account',
+        'Failed to create platform expense payment',
         status.INTERNAL_SERVER_ERROR,
+        {
+          error,
+          failedSyncLogPayload: {
+            entityType: SyncEntityType.EXPENSE,
+            eventType: SyncEventType.CREATED,
+            copilotId: data.invoiceId,
+            amount: String(data.feeAmount.paidByPlatform / 100),
+            feeAmount: String(data.feeAmount.paidByPlatform / 100),
+          },
+        },
       )
     }
-
-    // Log payment to DB as an expense
-    await this.createPaymentRecord(
-      {
-        copilotInvoiceId: data.invoiceId,
-        xeroInvoiceId: z.string().parse(invoice.invoiceID),
-        xeroPaymentId: z.string().parse(transaction.bankTransactionID),
-        copilotPaymentId: data.id,
-      },
-      PaymentUserType.EXPENSE,
-    )
-
-    logger.info(
-      'SyncedPaymentsService#createPlatformExpensePayment :: Created platform expense payment',
-      transaction,
-    )
-    return transaction
   }
 }
 
