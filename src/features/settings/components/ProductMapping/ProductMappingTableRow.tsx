@@ -147,7 +147,7 @@ export const ProductMappingTableRow = ({
                       </span>
                     </button>
                   ))
-                : 'No items in Xero'}
+                : ''}
               {false && <div className="px-3 py-2 text-gray-500 text-sm">No items found</div>}
             </div>
           </div>
