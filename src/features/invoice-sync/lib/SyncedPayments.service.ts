@@ -117,7 +117,7 @@ class SyncedPaymentsService extends AuthenticatedXeroService {
 
       logger.info(
         'SyncedPaymentsService#createPlatformExpensePayment :: Created platform expense payment',
-        transaction,
+        transaction.bankTransactionID,
       )
 
       const syncLogsService = new SyncLogsService(this.user, this.connection)

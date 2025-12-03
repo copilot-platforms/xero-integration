@@ -158,7 +158,8 @@ class SyncedContactsService extends AuthenticatedXeroService {
   ) {
     logger.info(
       'SyncedContactsService#validateXeroContact :: Validating xero contact for ',
-      contact,
+      contact.name,
+      `(${contact.name}, ${contact.firstName} ${contact.lastName}, ${contact.emailAddress})`,
       'using company name:',
       useCompanyName,
       'with client & company:',

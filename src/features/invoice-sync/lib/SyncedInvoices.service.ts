@@ -35,7 +35,7 @@ class SyncedInvoicesService extends AuthenticatedXeroService {
     xeroInvoiceId: string | null
     status: NonNullable<SyncedInvoiceCreatePayload['status']>
   }> {
-    logger.info('SyncedInvoicesService#syncInvoiceToXero :: Syncing invoice to xero:', data)
+    logger.info('SyncedInvoicesService#syncInvoiceToXero :: Syncing invoice to xero:', data.id)
 
     const taxRatePromise = this.getTaxRate(data)
     const contactPromise = this.getContact(data)
@@ -189,7 +189,7 @@ class SyncedInvoicesService extends AuthenticatedXeroService {
 
     logger.info(
       'SyncedInvoicesService#getValidatedInvoiceRecord :: Fetched Xero invoice for payment sync:',
-      invoice,
+      invoice.invoiceID,
     )
     return { invoiceRecord, invoice }
   }
@@ -395,14 +395,22 @@ class SyncedInvoicesService extends AuthenticatedXeroService {
   }
 
   private async getTaxRate(data: InvoiceCreatedEvent) {
-    logger.info('SyncedInvoicesService#getTaxRate :: Fetching tax rate for', data)
+    logger.info(
+      'SyncedInvoicesService#getTaxRate :: Fetching tax rate for',
+      data.taxAmount,
+      data.taxPercentage,
+    )
 
     const xeroTaxService = new SyncedTaxRatesService(this.user, this.connection)
     return data.taxAmount ? await xeroTaxService.getTaxRateForItem(data.taxPercentage) : undefined
   }
 
   private async getContact(data: InvoiceCreatedEvent) {
-    logger.info('SyncedInvoicesService#getContact :: Fetching contact for', data)
+    logger.info(
+      'SyncedInvoicesService#getContact :: Fetching contact for',
+      data.clientId,
+      data.companyId,
+    )
 
     const xeroContactService = new SyncedContactsService(this.user, this.connection)
     return await xeroContactService.getSyncedContact(data.clientId)
@@ -414,8 +422,7 @@ class SyncedInvoicesService extends AuthenticatedXeroService {
    */
   private async getPriceIdToXeroItem(data: InvoiceCreatedEvent): Promise<Record<string, Item>> {
     logger.info(
-      'SyncedInvoicesService#getPriceIdToXeroItem :: Getting priceId to xero item for',
-      data,
+      'SyncedInvoicesService#getPriceIdToXeroItem :: Getting priceId to xero item for line items...',
     )
 
     const syncedItemsService = new SyncedItemsService(this.user, this.connection)
@@ -552,8 +559,8 @@ class SyncedInvoicesService extends AuthenticatedXeroService {
   ) {
     logger.info(
       'SyncedInvoicesService#updateInvoiceRecord :: Updating invoice for',
-      data,
-      syncedInvoice,
+      data.id,
+      syncedInvoice?.invoiceID,
       status,
     )
     const [invoice] = await this.db
