@@ -22,6 +22,7 @@ import logger from '@/lib/logger'
 import AuthenticatedXeroService from '@/lib/xero/AuthenticatedXero.service'
 import { type ItemUpdatePayload, ItemUpdatePayloadSchema } from '@/lib/xero/types'
 import { htmlToText } from '@/utils/html'
+import { sleep } from '@/utils/sleep'
 
 class WebhookService extends AuthenticatedXeroService {
   async handleEvent(data: WebhookEvent) {
@@ -155,6 +156,8 @@ class WebhookService extends AuthenticatedXeroService {
   }
 
   private handlePaymentSucceeded = async (eventData: unknown) => {
+    await sleep(5000) // Gharelu upachar for race condition when deadline is near
+
     logger.info(
       'WebhookService#handlePaymentSucceeded :: Handling payment succeeded for',
       eventData,
