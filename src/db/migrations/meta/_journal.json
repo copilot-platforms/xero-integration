@@ -50,6 +50,13 @@
       "when": 1764769877940,
       "tag": "20251203135117_increase-portal-id-length",
       "breakpoints": false
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1764771011721,
+      "tag": "20251203141011_increase-portal-id-length-in-all-tables",
+      "breakpoints": false
     }
   ]
 }

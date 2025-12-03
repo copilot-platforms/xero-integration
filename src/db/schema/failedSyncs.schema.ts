@@ -18,7 +18,7 @@ export const failedSyncs = pgTable(
     id: uuid().primaryKey().notNull().defaultRandom(),
 
     // Workspace ID / Portal ID in Copilot
-    portalId: varchar({ length: 16 }).notNull(),
+    portalId: varchar({ length: 64 }).notNull(),
 
     // Active Tenant ID (most recently connected Xero organization)
     tenantId: uuid().notNull(),
