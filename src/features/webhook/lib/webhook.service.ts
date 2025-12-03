@@ -15,7 +15,9 @@ import {
 import SyncedItemsService from '@items-sync/lib/SyncedItems.service'
 import SettingsService from '@settings/lib/Settings.service'
 import status from 'http-status'
+import { SyncStatus } from '@/db/schema/syncLogs.schema'
 import APIError from '@/errors/APIError'
+import { SyncLogsService } from '@/features/sync-logs/lib/SyncLogs.service'
 import logger from '@/lib/logger'
 import AuthenticatedXeroService from '@/lib/xero/AuthenticatedXero.service'
 import { type ItemUpdatePayload, ItemUpdatePayloadSchema } from '@/lib/xero/types'
@@ -48,6 +50,16 @@ class WebhookService extends AuthenticatedXeroService {
       // If its an APIError with status OK, we can just ignore it
       if (e instanceof APIError && e.status === status.OK) {
         return
+      }
+
+      if (e instanceof APIError && e.opts?.failedSyncLogPayload) {
+        const syncLogsService = new SyncLogsService(this.user, this.connection)
+        await syncLogsService.createSyncLog({
+          ...e.opts.failedSyncLogPayload,
+          status: SyncStatus.FAILED,
+          syncDate: new Date(),
+          errorMessage: e.message,
+        })
       }
 
       // Add sync failure record

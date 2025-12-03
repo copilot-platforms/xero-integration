@@ -8,7 +8,9 @@ import type { Item } from 'xero-node'
 import z from 'zod'
 import { getTableFields } from '@/db/db.helpers'
 import { syncedItems } from '@/db/schema/syncedItems.schema'
+import { SyncEntityType, SyncEventType, SyncStatus } from '@/db/schema/syncLogs.schema'
 import APIError from '@/errors/APIError'
+import { SyncLogsService } from '@/features/sync-logs/lib/SyncLogs.service'
 import logger from '@/lib/logger'
 import AuthenticatedXeroService from '@/lib/xero/AuthenticatedXero.service'
 import type { ItemUpdatePayload } from '@/lib/xero/types'
@@ -98,13 +100,40 @@ class SyncedItemsService extends AuthenticatedXeroService {
     const items: Item[] = []
     const xeroItemsMap = await this.xero.getItemsMap(this.connection.tenantId)
 
+    const syncLogsService = new SyncLogsService(this.user, this.connection)
+
     for (const item of syncedItemRecords) {
-      // This is a bit slower but since this is an async task, it hardly matters
-      const updatedItem = await this.xero.updateItem(this.connection.tenantId, item.itemId, {
-        code: xeroItemsMap[item.itemId].code,
-        ...payload,
-      })
-      items.push(updatedItem)
+      try {
+        // This is a bit slower but since this is an async task, it hardly matters
+        const updatedItem = await this.xero.updateItem(this.connection.tenantId, item.itemId, {
+          code: xeroItemsMap[item.itemId].code,
+          ...payload,
+        })
+        items.push(updatedItem)
+
+        await syncLogsService.createSyncLog({
+          entityType: SyncEntityType.PRODUCT,
+          eventType: SyncEventType.UPDATED,
+          status: SyncStatus.SUCCESS,
+          syncDate: new Date(),
+          copilotId: productId,
+          xeroId: item.itemId,
+          xeroItemName: updatedItem.name,
+          productName: payload.name,
+          productPrice: String(updatedItem.salesDetails?.unitPrice || 0),
+        })
+      } catch (error: unknown) {
+        throw new APIError('Failed to update synced item', status.INTERNAL_SERVER_ERROR, {
+          error,
+          failedSyncLogPayload: {
+            entityType: SyncEntityType.PRODUCT,
+            eventType: SyncEventType.UPDATED,
+            copilotId: productId,
+            xeroId: item.itemId,
+            productName: payload.name,
+          },
+        })
+      }
     }
     return items
   }
@@ -133,8 +162,35 @@ class SyncedItemsService extends AuthenticatedXeroService {
         },
       }
 
-      const items = await this.createItems([payload], { [payload.code]: price })
-      createdItems.push(items[0])
+      const syncLogsService = new SyncLogsService(this.user, this.connection)
+
+      try {
+        const items = await this.createItems([payload], { [payload.code]: price })
+        createdItems.push(items[0])
+
+        await syncLogsService.createSyncLog({
+          entityType: SyncEntityType.PRODUCT,
+          eventType: SyncEventType.CREATED,
+          status: SyncStatus.SUCCESS,
+          syncDate: new Date(),
+          copilotId: price.productId,
+          xeroId: items[0].itemID,
+          xeroItemName: items[0].name,
+          productName: product.name,
+          productPrice: String(price.amount / 100),
+        })
+      } catch (error: unknown) {
+        throw new APIError('Failed to create synced item for price', status.INTERNAL_SERVER_ERROR, {
+          error,
+          failedSyncLogPayload: {
+            entityType: SyncEntityType.PRODUCT,
+            eventType: SyncEventType.CREATED,
+            copilotId: price.productId,
+            productName: product.name,
+            productPrice: String(price.amount / 100),
+          },
+        })
+      }
     }
     return createdItems
   }

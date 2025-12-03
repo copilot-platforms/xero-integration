@@ -10,6 +10,7 @@ import { and, desc, eq } from 'drizzle-orm'
 import status from 'http-status'
 import { Invoice, type Item } from 'xero-node'
 import z from 'zod'
+import env from '@/config/server.env'
 import { getTableFields } from '@/db/db.helpers'
 import { type SyncedInvoiceCreatePayload, syncedInvoices } from '@/db/schema/syncedInvoices.schema'
 import { SyncEntityType, SyncEventType, SyncStatus } from '@/db/schema/syncLogs.schema'
@@ -133,15 +134,33 @@ class SyncedInvoicesService extends AuthenticatedXeroService {
       'SyncedInvoicesService#createMissingXeroInvoice :: Creating missing Xero invoice for:',
       copilotInvoiceId,
     )
-
     const invoice = await this.copilot.getInvoice(copilotInvoiceId)
-    const record = await this.syncInvoiceToXero(invoice)
+    const [record, contact] = await Promise.all([
+      this.syncInvoiceToXero(invoice),
+      this.getContact(invoice),
+    ])
     if (!('xeroInvoiceId' in record) || !record.xeroInvoiceId) {
       throw new APIError(
         `Failed to create Xero invoice for Copilot invoice ${copilotInvoiceId}`,
         status.INTERNAL_SERVER_ERROR,
       )
     }
+
+    const syncLogsService = new SyncLogsService(this.user, this.connection)
+    await syncLogsService.createSyncLog({
+      entityType: SyncEntityType.INVOICE,
+      eventType: SyncEventType.CREATED,
+      status: SyncStatus.SUCCESS,
+      syncDate: new Date(),
+      amount: String(invoice.total / 100),
+      taxAmount: String(invoice.taxAmount),
+      invoiceNumber: invoice.number,
+      copilotId: invoice.id,
+      xeroId: record.xeroInvoiceId,
+      customerEmail: contact.emailAddress,
+      customerName: contact.name,
+    })
+
     return record
   }
 
@@ -186,7 +205,7 @@ class SyncedInvoicesService extends AuthenticatedXeroService {
     const paymentsService = new SyncedPaymentsService(this.user, this.connection)
 
     const syncLogsService = new SyncLogsService(this.user, this.connection)
-    const prevSyncLog = await syncLogsService.getCreatedSyncLog(copilotInvoiceId)
+    const prevSyncLog = await syncLogsService.getInvoiceCreatedSyncLog(copilotInvoiceId)
 
     if (invoiceRecord.status === 'success') {
       const pastPayment = await paymentsService.getPaymentForInvoiceId(copilotInvoiceId)
@@ -269,7 +288,7 @@ class SyncedInvoicesService extends AuthenticatedXeroService {
     const { invoiceRecord } = await this.getValidatedInvoiceRecord(copilotInvoiceId)
 
     const syncLogsService = new SyncLogsService(this.user, this.connection)
-    const prevSyncLog = await syncLogsService.getCreatedSyncLog(copilotInvoiceId)
+    const prevSyncLog = await syncLogsService.getInvoiceCreatedSyncLog(copilotInvoiceId)
 
     try {
       const voidedInvoice = await this.xero.voidInvoice(
@@ -308,10 +327,19 @@ class SyncedInvoicesService extends AuthenticatedXeroService {
       copilotInvoiceId,
     )
     const syncLogsService = new SyncLogsService(this.user, this.connection)
-    const prevSyncLog = await syncLogsService.getCreatedSyncLog(copilotInvoiceId)
+    const prevSyncLog = await syncLogsService.getInvoiceCreatedSyncLog(copilotInvoiceId)
 
     try {
-      const { invoiceRecord } = await this.getValidatedInvoiceRecord(copilotInvoiceId)
+      const { invoiceRecord, invoice } = await this.getValidatedInvoiceRecord(copilotInvoiceId)
+      if (invoice.status !== Invoice.StatusEnum.VOIDED) {
+        await this.voidInvoice(copilotInvoiceId)
+      }
+
+      if (!env.FLAG_ENABLE_DELETE_SYNC) {
+        logger.warn('SyncedInvoicesService#deleteInvoice :: Delete sync is disabled. Skipping...')
+        return invoice
+      }
+
       const deletedInvoice = await this.xero.deleteInvoice(
         this.connection.tenantId,
         z.uuid().parse(invoiceRecord.xeroInvoiceId),
