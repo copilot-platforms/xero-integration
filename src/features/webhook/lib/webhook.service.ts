@@ -81,6 +81,10 @@ class WebhookService extends AuthenticatedXeroService {
       throw new APIError(`Ignoring draft invoice ${data.id}`, status.OK)
     }
     const xeroInvoiceSyncService = new XeroInvoiceSyncService(this.user, this.connection)
+    if (data.collectionMethod === 'chargeAutomatically') {
+      logger.info('Skipping invoice creation for a charge automatically invoice')
+      return
+    }
     return await xeroInvoiceSyncService.syncInvoiceToXero(data)
   }
 
@@ -163,6 +167,7 @@ class WebhookService extends AuthenticatedXeroService {
       logger.info(
         'WebhookService#handlePaymentSucceeded :: addAbsorbedFees is disabled, skipping fee addition',
       )
+      return
     }
 
     const syncedPaymentsService = new SyncedPaymentsService(this.user, this.connection)

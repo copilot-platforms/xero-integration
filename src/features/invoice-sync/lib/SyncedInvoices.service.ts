@@ -6,6 +6,7 @@ import SyncedTaxRatesService from '@invoice-sync/lib/SyncedTaxRates.service'
 import { serializeLineItems } from '@invoice-sync/lib/serializers'
 import type { InvoiceCreatedEvent } from '@invoice-sync/types'
 import SyncedItemsService from '@items-sync/lib/SyncedItems.service'
+import dayjs from 'dayjs'
 import { and, desc, eq } from 'drizzle-orm'
 import status from 'http-status'
 import { Invoice, type Item } from 'xero-node'
@@ -61,10 +62,10 @@ class SyncedInvoicesService extends AuthenticatedXeroService {
       type: Invoice.TypeEnum.ACCREC,
       invoiceNumber: data.number,
       contact: { contactID },
-      dueDate: datetimeToDate(data.dueDate),
+      dueDate: datetimeToDate(data.dueDate || dayjs().format('YYYY-MM-DDTHH:mm:ss.SSSZ')),
       lineItems,
       status: Invoice.StatusEnum.AUTHORISED,
-      date: datetimeToDate(data.sentDate),
+      date: datetimeToDate(data.sentDate || dayjs().format('YYYY-MM-DDTHH:mm:ss.SSSZ')),
     } satisfies InvoiceCreatePayload)
 
     // Add a "pending" invoice to db
@@ -165,6 +166,10 @@ class SyncedInvoicesService extends AuthenticatedXeroService {
   }
 
   async getValidatedInvoiceRecord(copilotInvoiceId: string) {
+    logger.info(
+      'SyncedInvoicesService#getValidatedInvoiceRecord :: Getting invoice record for:',
+      copilotInvoiceId,
+    )
     let invoiceRecord = await this.getOrCreateInvoiceRecord(copilotInvoiceId)
 
     if (!invoiceRecord.xeroInvoiceId) {
