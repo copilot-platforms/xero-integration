@@ -1,3 +1,4 @@
+import dayjs from 'dayjs'
 import z from 'zod'
 
 export const WebhookTokenSchema = z.object({
@@ -8,10 +9,10 @@ export type WebhookToken = z.infer<typeof WebhookTokenSchema>
 export const InvoiceCreatedEventSchema = z.object({
   clientId: z.uuid(),
   companyId: z.uuid(),
-  collectionMethod: z.enum(['sendInvoice']),
+  collectionMethod: z.enum(['sendInvoice', 'chargeAutomatically']),
   createdAt: z.iso.datetime(),
   currency: z.string(),
-  dueDate: z.iso.datetime().default(new Date().toISOString()), // default is for charge client option
+  dueDate: z.iso.datetime().nullable().default(dayjs().format('YYYY-MM-DDTHH:mm:ss.SSSZ')), // default is for charge client option
   fileUrl: z.string(),
   id: z.string(),
   lineItems: z.array(
@@ -25,8 +26,8 @@ export const InvoiceCreatedEventSchema = z.object({
   ),
   memo: z.string(),
   number: z.string(),
-  sentDate: z.iso.datetime(),
-  status: z.enum(['open', 'draft']),
+  sentDate: z.iso.datetime().nullable().default(dayjs().format('YYYY-MM-DDTHH:mm:ss.SSSZ')),
+  status: z.enum(['open', 'draft', 'paid']),
   taxAmount: z.number(),
   taxPercentage: z.number(),
   total: z.number(),
