@@ -3,6 +3,7 @@
 import { useAuthContext } from '@auth/hooks/useAuth'
 import { disconnectApp } from '@settings/actions/disconnectApp'
 import { useSettingsContext } from '@settings/hooks/useSettings'
+import { useState } from 'react'
 import { useActionsMenu } from '@/lib/copilot/hooks/app-bridge'
 import { Icons } from '@/lib/copilot/hooks/app-bridge/types'
 
@@ -19,7 +20,7 @@ export const useAppBridge = ({ token }: { token: string }) => {
   }
 
   // biome-ignore lint/suspicious/useAwait: there is no async action being done here but the type signature requires it
-  const downloadCsvAction = async () => {
+  const _downloadCsvAction = async () => {
     const url = `/api/sync-logs?token=${token}`
     const link = document.createElement('a')
     link.href = url
@@ -28,6 +29,13 @@ export const useAppBridge = ({ token }: { token: string }) => {
     link.click()
     link.remove()
   }
+
+  // Quickfix for now (it will probably stay like this for the end of time)
+  const [downloadCsvAction, setDownloadCsvAction] = useState(() => _downloadCsvAction)
+
+  setTimeout(() => {
+    setDownloadCsvAction(() => _downloadCsvAction)
+  }, 1000)
 
   let actions: { label: string; icon?: Icons; onClick: () => Promise<void> }[] = []
   if (connectionStatus) {
