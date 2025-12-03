@@ -11,6 +11,6 @@ export enum ReportTaxType {
   OUTPUT = 'OUTPUT',
 }
 
-export const SALES_ACCOUNT_NAME = 'Sale of Goods' // Mirrors Xero's default sales account name  & behavior
+export const SALES_ACCOUNT_NAME = 'Sales of Goods' // Mirrors Xero's default sales account name  & behavior
 export const EXPENSE_ACCOUNT_NAME = 'Assembly Processing Fees'
 export const ASSET_ACCOUNT_NAME = 'Assembly Asset Account'
