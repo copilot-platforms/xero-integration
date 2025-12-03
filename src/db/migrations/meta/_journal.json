@@ -43,6 +43,13 @@
       "when": 1763988063564,
       "tag": "20251124124103_add-sync-logs-table",
       "breakpoints": false
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1764769877940,
+      "tag": "20251203135117_increase-portal-id-length",
+      "breakpoints": false
     }
   ]
 }

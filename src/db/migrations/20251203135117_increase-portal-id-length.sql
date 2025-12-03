@@ -1,0 +1,1 @@
+ALTER TABLE "settings" ALTER COLUMN "portal_id" SET DATA TYPE varchar(64);
