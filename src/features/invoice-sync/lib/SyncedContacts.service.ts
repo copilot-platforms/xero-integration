@@ -10,7 +10,9 @@ import status from 'http-status'
 import type { Contact } from 'xero-node'
 import z from 'zod'
 import { SyncedContactUserType, syncedContacts } from '@/db/schema/syncedContacts.schema'
+import { SyncEntityType, SyncEventType, SyncStatus } from '@/db/schema/syncLogs.schema'
 import APIError from '@/errors/APIError'
+import { SyncLogsService } from '@/features/sync-logs/lib/SyncLogs.service'
 import { CopilotAPI } from '@/lib/copilot/CopilotAPI'
 import type { ClientResponse, CompanyResponse } from '@/lib/copilot/types'
 import { buildClientName } from '@/lib/copilot/utils'
@@ -103,17 +105,44 @@ class SyncedContactsService extends AuthenticatedXeroService {
       contactPayload = serializeContactForClient(client)
     }
 
-    const contact = await this.xero.createContact(this.connection.tenantId, contactPayload)
-    await this.db.insert(syncedContacts).values({
-      portalId: this.user.portalId,
-      clientOrCompanyId: useCompanyName ? companyId : client.id,
-      userType: useCompanyName ? SyncedContactUserType.COMPANY : SyncedContactUserType.CLIENT,
-      contactId: z.string().parse(contact.contactID),
-      tenantId: this.connection.tenantId,
-    })
-    return {
-      ...contact,
-      contactID: z.string().parse(contact.contactID),
+    const syncLogsService = new SyncLogsService(this.user, this.connection)
+
+    try {
+      const contact = await this.xero.createContact(this.connection.tenantId, contactPayload)
+      await this.db.insert(syncedContacts).values({
+        portalId: this.user.portalId,
+        clientOrCompanyId: useCompanyName ? companyId : client.id,
+        userType: useCompanyName ? SyncedContactUserType.COMPANY : SyncedContactUserType.CLIENT,
+        contactId: z.string().parse(contact.contactID),
+        tenantId: this.connection.tenantId,
+      })
+
+      await syncLogsService.createSyncLog({
+        entityType: SyncEntityType.CUSTOMER,
+        eventType: SyncEventType.CREATED,
+        status: SyncStatus.SUCCESS,
+        syncDate: new Date(),
+        copilotId: useCompanyName ? companyId : client.id,
+        xeroId: contact.contactID,
+        customerName: contact.name,
+        customerEmail: contact.emailAddress,
+      })
+
+      return {
+        ...contact,
+        contactID: z.string().parse(contact.contactID),
+      }
+    } catch (error: unknown) {
+      throw new APIError('Failed to create synced contact', status.INTERNAL_SERVER_ERROR, {
+        error,
+        failedSyncLogPayload: {
+          entityType: SyncEntityType.CUSTOMER,
+          eventType: SyncEventType.CREATED,
+          copilotId: useCompanyName ? companyId : client.id,
+          customerName: contactPayload.name,
+          customerEmail: contactPayload.emailAddress,
+        },
+      })
     }
   }
 
@@ -144,12 +173,37 @@ class SyncedContactsService extends AuthenticatedXeroService {
       )
     }
 
+    const syncLogsService = new SyncLogsService(this.user, this.connection)
+
     if (useCompanyName && company) {
       if (contact.name !== `${company.name}`) {
-        await this.xero.updateContact(this.connection.tenantId, {
-          ...contact,
-          name: `${company.name}`,
-        })
+        try {
+          const updatedContact = await this.xero.updateContact(this.connection.tenantId, {
+            ...contact,
+            name: `${company.name}`,
+          })
+
+          await syncLogsService.createSyncLog({
+            entityType: SyncEntityType.CUSTOMER,
+            eventType: SyncEventType.UPDATED,
+            status: SyncStatus.SUCCESS,
+            syncDate: new Date(),
+            copilotId: company.id,
+            xeroId: updatedContact.contactID,
+            customerName: updatedContact.name,
+            customerEmail: updatedContact.emailAddress,
+          })
+        } catch (error: unknown) {
+          throw new APIError('Failed to update synced contact', status.INTERNAL_SERVER_ERROR, {
+            error,
+            failedSyncLogPayload: {
+              entityType: SyncEntityType.CUSTOMER,
+              eventType: SyncEventType.UPDATED,
+              copilotId: company.id,
+              customerName: company.name,
+            },
+          })
+        }
       }
       return
     }
@@ -160,13 +214,37 @@ class SyncedContactsService extends AuthenticatedXeroService {
       contact.lastName !== client.familyName ||
       contact.emailAddress !== client.email
     ) {
-      await this.xero.updateContact(this.connection.tenantId, {
-        ...contact,
-        name: buildClientName(client),
-        firstName: client.givenName,
-        lastName: client.familyName,
-        emailAddress: client.email,
-      })
+      try {
+        const updatedContact = await this.xero.updateContact(this.connection.tenantId, {
+          ...contact,
+          name: buildClientName(client),
+          firstName: client.givenName,
+          lastName: client.familyName,
+          emailAddress: client.email,
+        })
+
+        await syncLogsService.createSyncLog({
+          entityType: SyncEntityType.CUSTOMER,
+          eventType: SyncEventType.UPDATED,
+          status: SyncStatus.SUCCESS,
+          syncDate: new Date(),
+          copilotId: client.id,
+          xeroId: updatedContact.contactID,
+          customerName: updatedContact.name,
+          customerEmail: updatedContact.emailAddress,
+        })
+      } catch (error: unknown) {
+        throw new APIError('Failed to update synced contact', status.INTERNAL_SERVER_ERROR, {
+          error,
+          failedSyncLogPayload: {
+            entityType: SyncEntityType.CUSTOMER,
+            eventType: SyncEventType.UPDATED,
+            copilotId: client.id,
+            customerName: buildClientName(client),
+            customerEmail: client.email,
+          },
+        })
+      }
     }
   }
 }

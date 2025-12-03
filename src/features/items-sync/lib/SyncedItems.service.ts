@@ -111,6 +111,12 @@ class SyncedItemsService extends AuthenticatedXeroService {
         })
         items.push(updatedItem)
 
+        const { copilotProduct, copilotPrice, xeroItem } = await this.getCopilotProductAndPrice(
+          item.productId,
+          item.priceId,
+          item.itemId,
+        )
+
         await syncLogsService.createSyncLog({
           entityType: SyncEntityType.PRODUCT,
           eventType: SyncEventType.UPDATED,
@@ -118,9 +124,9 @@ class SyncedItemsService extends AuthenticatedXeroService {
           syncDate: new Date(),
           copilotId: productId,
           xeroId: item.itemId,
-          xeroItemName: updatedItem.name,
-          productName: payload.name,
-          productPrice: String(updatedItem.salesDetails?.unitPrice || 0),
+          xeroItemName: xeroItem?.name,
+          productName: copilotProduct?.name,
+          productPrice: String((copilotPrice?.amount || 0) / 100),
         })
       } catch (error: unknown) {
         throw new APIError('Failed to update synced item', status.INTERNAL_SERVER_ERROR, {
@@ -130,7 +136,6 @@ class SyncedItemsService extends AuthenticatedXeroService {
             eventType: SyncEventType.UPDATED,
             copilotId: productId,
             xeroId: item.itemId,
-            productName: payload.name,
           },
         })
       }
@@ -198,6 +203,8 @@ class SyncedItemsService extends AuthenticatedXeroService {
   async addSyncedItems(items: Mappable[]) {
     logger.info('SyncedItemsService#addSyncedItems :: Adding synced items', items)
 
+    const syncLogsService = new SyncLogsService(this.user, this.connection)
+
     // We have to do this one-by-one because xero doesn't provide a bulk delete API
     for (const item of items) {
       logger.info('SyncedItemsService#addSyncedItems :: Adding mapping', item)
@@ -217,11 +224,30 @@ class SyncedItemsService extends AuthenticatedXeroService {
         priceId: item.priceId,
         itemId: item.itemId,
       })
+
+      const { copilotProduct, copilotPrice, xeroItem } = await this.getCopilotProductAndPrice(
+        item.productId,
+        item.priceId,
+        item.itemId,
+      )
+      await syncLogsService.createSyncLog({
+        entityType: SyncEntityType.PRODUCT,
+        eventType: SyncEventType.MAPPED,
+        status: SyncStatus.SUCCESS,
+        syncDate: new Date(),
+        copilotId: item.productId,
+        xeroId: item.itemId,
+        productName: copilotProduct?.name,
+        productPrice: String((copilotPrice?.amount || 0) / 100),
+        xeroItemName: xeroItem?.name,
+      })
     }
   }
 
   async deleteSyncedItems(items: Mappable[]) {
     logger.info('SyncedItemsService#deleteSyncedItems :: Deleting synced items', items)
+    const syncLogsService = new SyncLogsService(this.user, this.connection)
+
     // We have to do this one-by-one because xero doesn't provide a bulk delete API
     for (const item of items) {
       logger.info('SyncedItemsService#deleteSyncedItems :: Deleting mapping', item)
@@ -245,6 +271,42 @@ class SyncedItemsService extends AuthenticatedXeroService {
             eq(syncedItems.itemId, item.itemId),
           ),
         )
+      const { copilotProduct, copilotPrice, xeroItem } = await this.getCopilotProductAndPrice(
+        item.productId,
+        item.priceId,
+        item.itemId,
+      )
+      await syncLogsService.createSyncLog({
+        entityType: SyncEntityType.PRODUCT,
+        eventType: SyncEventType.UNMAPPED,
+        status: SyncStatus.INFO,
+        syncDate: new Date(),
+        copilotId: item.productId,
+        xeroId: item.itemId,
+        productName: copilotProduct?.name,
+        productPrice: String((copilotPrice?.amount || 0) / 100),
+        xeroItemName: xeroItem?.name,
+      })
+    }
+  }
+
+  private async getCopilotProductAndPrice(productId: string, priceId: string, itemId: string) {
+    try {
+      const copilotProductMapPromise = this.copilot.getProductsMapById([productId])
+      const copilotPriceMapPromise = this.copilot.getPricesMapById([priceId])
+      const xeroItemMapPromise = this.xero.getItemsMap(this.connection.tenantId)
+      const [copilotProductMap, copilotPriceMap, xeroItemMap] = await Promise.all([
+        copilotProductMapPromise,
+        copilotPriceMapPromise,
+        xeroItemMapPromise,
+      ])
+
+      const copilotProduct = copilotProductMap[productId]
+      const copilotPrice = copilotPriceMap[priceId]
+      const xeroItem = xeroItemMap[itemId]
+      return { copilotProduct, copilotPrice, xeroItem }
+    } catch (_) {
+      return { copilotProduct: null, copilotPrice: null, xeroItem: null }
     }
   }
 }
