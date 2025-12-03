@@ -70,7 +70,6 @@ const getLastSyncedAt = async (user: User, connection: XeroConnection): Promise<
 const Home = async ({ searchParams }: PageProps) => {
   const sp = await searchParams
   const user = await User.authenticate(sp.token)
-
   const authService = new AuthService(user)
 
   const copilot = new CopilotAPI(user.token)
