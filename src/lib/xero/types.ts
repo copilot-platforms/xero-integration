@@ -81,7 +81,7 @@ export const ContactCreatePayloadSchema = z.object({
   name: z.string().min(1),
   firstName: z.string().min(1).optional(),
   lastName: z.string().optional(),
-  emailAddress: z.email(),
+  emailAddress: z.email().optional(),
 })
 export type ContactCreatePayload = z.infer<typeof ContactCreatePayloadSchema>
 

@@ -57,7 +57,7 @@ export const serializeContactForClient = (client: ClientResponse): ContactCreate
 
 export const serializeContactForCompany = (
   company: CompanyResponse,
-  emailAddress: string,
+  emailAddress?: string,
 ): ContactCreatePayload => {
   return ContactCreatePayloadSchema.parse({
     name: `${company.name}`,

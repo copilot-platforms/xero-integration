@@ -25,6 +25,11 @@ export const handleCopilotWebhook = async (req: NextRequest) => {
   const reqBody = await req.json()
   const webhookData = WebhookEventSchema.safeParse(reqBody)
   if (!webhookData.success) {
+    logger.info(
+      'webhook/api/webhook.controller#handleCopilotWebhook :: Ignored webhook call for event',
+      reqBody,
+      webhookData.error,
+    )
     return NextResponse.json({ message: 'Ignored webhook call for event' })
   }
 

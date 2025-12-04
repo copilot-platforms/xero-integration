@@ -13,7 +13,6 @@ import { SyncedContactUserType, syncedContacts } from '@/db/schema/syncedContact
 import { SyncEntityType, SyncEventType, SyncStatus } from '@/db/schema/syncLogs.schema'
 import APIError from '@/errors/APIError'
 import { SyncLogsService } from '@/features/sync-logs/lib/SyncLogs.service'
-import { CopilotAPI } from '@/lib/copilot/CopilotAPI'
 import type { ClientResponse, CompanyResponse } from '@/lib/copilot/types'
 import { buildClientName } from '@/lib/copilot/utils'
 import logger from '@/lib/logger'
@@ -21,19 +20,20 @@ import AuthenticatedXeroService from '@/lib/xero/AuthenticatedXero.service'
 import type { ContactCreatePayload, ValidContact } from '@/lib/xero/types'
 
 class SyncedContactsService extends AuthenticatedXeroService {
-  async getSyncedContact(clientId: string): Promise<Contact> {
+  async getSyncedContact(clientId: string | undefined, companyId: string): Promise<Contact> {
+    // NOTE: Absence of clientId means that the invoice is billed to a company
     logger.info('SyncedContactsService#getSyncedContact :: Getting synced contact for', clientId)
 
     const settingsService = new SettingsService(this.user, this.connection)
     const { useCompanyName } = await settingsService.getSettings()
 
-    const copilot = new CopilotAPI(this.user.token)
-    const client = await copilot.getClient(clientId)
-    const companyId = z.string().parse(client.companyIds?.[0])
+    const client = clientId ? await this.copilot.getClient(clientId) : undefined
 
     let company: CompanyResponse | undefined
-    if (useCompanyName) {
-      company = await this.copilot.getCompany(z.string().parse(companyId))
+    // If useCompanyName is true or clientId is undefined, then the invoice is billed to a company
+    // `company` variable will be populated then.
+    if (useCompanyName || !clientId) {
+      company = await this.copilot.getCompany(companyId)
     }
 
     const query = this.db
@@ -43,10 +43,12 @@ class SyncedContactsService extends AuthenticatedXeroService {
         and(
           eq(syncedContacts.portalId, this.user.portalId),
           eq(syncedContacts.tenantId, this.connection.tenantId),
-          eq(syncedContacts.clientOrCompanyId, useCompanyName ? companyId : clientId),
+          eq(syncedContacts.clientOrCompanyId, useCompanyName || !clientId ? companyId : clientId),
           eq(
             syncedContacts.userType,
-            useCompanyName ? SyncedContactUserType.COMPANY : SyncedContactUserType.CLIENT,
+            useCompanyName || !clientId
+              ? SyncedContactUserType.COMPANY
+              : SyncedContactUserType.CLIENT,
           ),
         ),
       )
@@ -67,7 +69,10 @@ class SyncedContactsService extends AuthenticatedXeroService {
           and(
             eq(syncedContacts.portalId, this.user.portalId),
             eq(syncedContacts.tenantId, this.connection.tenantId),
-            eq(syncedContacts.clientOrCompanyId, clientId),
+            eq(
+              syncedContacts.clientOrCompanyId,
+              useCompanyName || !clientId ? companyId : clientId,
+            ),
           ),
         )
     }
@@ -80,39 +85,47 @@ class SyncedContactsService extends AuthenticatedXeroService {
     return contact
   }
 
+  /**
+   * Accepts either client or company and creates a contact for it
+   */
   async createContact(
-    client: ClientResponse,
+    client?: ClientResponse,
     company?: CompanyResponse,
   ): Promise<Contact & { contactID: string }> {
     logger.info(
-      'SyncedContactsService#createContact :: Creating synced contact for',
+      'SyncedContactsService#createContact :: Creating synced contact for client',
       client,
+      'or company',
       company,
     )
-    const companyId = z.string().parse(client.companyIds?.[0])
+    if (!client && !company) {
+      throw new APIError('Client or company is required to create a contact', status.BAD_REQUEST)
+    }
 
-    const settingsService = new SettingsService(this.user, this.connection)
-    const { useCompanyName } = await settingsService.getSettings()
+    const companyId = z.string().parse(company?.id || client?.companyIds?.[0])
 
     let contactPayload: ContactCreatePayload
 
-    if (useCompanyName) {
-      if (!company) {
-        company = await this.copilot.getCompany(z.string().parse(client.companyIds?.[0]))
-      }
-      contactPayload = serializeContactForCompany(company, client.email)
-    } else {
+    if (company) {
+      contactPayload = serializeContactForCompany(
+        company,
+        company.customFields?.email || client?.email,
+      )
+    } else if (client) {
       contactPayload = serializeContactForClient(client)
+    } else {
+      throw new APIError('Client or company is required to create a contact', status.BAD_REQUEST)
     }
 
     const syncLogsService = new SyncLogsService(this.user, this.connection)
 
     try {
       const contact = await this.xero.createContact(this.connection.tenantId, contactPayload)
+
       await this.db.insert(syncedContacts).values({
         portalId: this.user.portalId,
-        clientOrCompanyId: useCompanyName ? companyId : client.id,
-        userType: useCompanyName ? SyncedContactUserType.COMPANY : SyncedContactUserType.CLIENT,
+        clientOrCompanyId: company ? companyId : z.string().parse(client?.id),
+        userType: company ? SyncedContactUserType.COMPANY : SyncedContactUserType.CLIENT,
         contactId: z.string().parse(contact.contactID),
         tenantId: this.connection.tenantId,
       })
@@ -122,7 +135,7 @@ class SyncedContactsService extends AuthenticatedXeroService {
         eventType: SyncEventType.CREATED,
         status: SyncStatus.SUCCESS,
         syncDate: new Date(),
-        copilotId: useCompanyName ? companyId : client.id,
+        copilotId: company ? companyId : z.string().parse(client?.id),
         xeroId: contact.contactID,
         customerName: contact.name,
         customerEmail: contact.emailAddress,
@@ -138,7 +151,7 @@ class SyncedContactsService extends AuthenticatedXeroService {
         failedSyncLogPayload: {
           entityType: SyncEntityType.CUSTOMER,
           eventType: SyncEventType.CREATED,
-          copilotId: useCompanyName ? companyId : client.id,
+          copilotId: company ? companyId : z.string().parse(client?.id),
           customerName: contactPayload.name,
           customerEmail: contactPayload.emailAddress,
         },
@@ -153,7 +166,7 @@ class SyncedContactsService extends AuthenticatedXeroService {
   async validateXeroContact(
     contact: ValidContact,
     useCompanyName: boolean,
-    client: ClientResponse,
+    client?: ClientResponse,
     company?: CompanyResponse,
   ) {
     logger.info(
@@ -176,7 +189,7 @@ class SyncedContactsService extends AuthenticatedXeroService {
 
     const syncLogsService = new SyncLogsService(this.user, this.connection)
 
-    if (useCompanyName && company) {
+    if ((useCompanyName || !client) && company) {
       if (contact.name !== `${company.name}`) {
         try {
           const updatedContact = await this.xero.updateContact(this.connection.tenantId, {
@@ -210,10 +223,11 @@ class SyncedContactsService extends AuthenticatedXeroService {
     }
 
     if (
-      contact.name !== buildClientName(client) ||
-      contact.firstName !== client.givenName ||
-      contact.lastName !== client.familyName ||
-      contact.emailAddress !== client.email
+      client &&
+      (contact.name !== buildClientName(client) ||
+        contact.firstName !== client.givenName ||
+        contact.lastName !== client.familyName ||
+        contact.emailAddress !== client.email)
     ) {
       try {
         const updatedContact = await this.xero.updateContact(this.connection.tenantId, {
@@ -246,7 +260,9 @@ class SyncedContactsService extends AuthenticatedXeroService {
           },
         })
       }
+      return
     }
+    logger.info('SyncedContactsService#createContact :: No changes detected')
   }
 }
 
