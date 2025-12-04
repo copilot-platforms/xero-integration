@@ -3,7 +3,6 @@ import { CalloutSection } from '@auth/components/CalloutSection'
 import { RealtimeXeroConnections } from '@auth/components/RealtimeXeroConnections'
 import { AuthContextProvider } from '@auth/context/AuthContext'
 import AuthService from '@auth/lib/Auth.service'
-import SyncedInvoicesService from '@invoice-sync/lib/SyncedInvoices.service'
 import { SettingsForm } from '@settings/components/SettingsForm'
 import { defaultSettings } from '@settings/constants/defaults'
 import { SettingsContextProvider } from '@settings/context/SettingsContext'
@@ -12,6 +11,7 @@ import SettingsService from '@settings/lib/Settings.service'
 import type { PageProps } from '@/app/(home)/types'
 import type { SettingsFields } from '@/db/schema/settings.schema'
 import type { XeroConnection, XeroConnectionWithTokenSet } from '@/db/schema/xeroConnections.schema'
+import { SyncLogsService } from '@/features/sync-logs/lib/SyncLogs.service'
 import { CopilotAPI } from '@/lib/copilot/CopilotAPI'
 import { serializeClientUser } from '@/lib/copilot/models/ClientUser.model'
 import User from '@/lib/copilot/models/User.model'
@@ -60,11 +60,8 @@ const getXeroItems = async (user: User, connection: XeroConnection): Promise<Cli
 const getLastSyncedAt = async (user: User, connection: XeroConnection): Promise<Date | null> => {
   if (!connection.tenantId) return null
 
-  const syncedInvoicesService = new SyncedInvoicesService(
-    user,
-    connection as XeroConnectionWithTokenSet,
-  )
-  return await syncedInvoicesService.getLastSyncedAt()
+  const syncLogsService = new SyncLogsService(user, connection as XeroConnectionWithTokenSet)
+  return await syncLogsService.getLastSyncedAt()
 }
 
 const Home = async ({ searchParams }: PageProps) => {
