@@ -22,7 +22,7 @@ export const ProductMappingTableRow = ({
   const xeroItem = xeroItems.find((i) => i.itemID === item.item?.itemID)
 
   const [searchQuery, setSearchQuery] = useState('')
-  const [focusedIndex, setFocusedIndex] = useState(0)
+  const [focusedIndex, setFocusedIndex] = useState(-1)
   const listRef = useRef<HTMLDivElement>(null)
 
   const filteredItems = dropdownXeroItems.filter((item) =>
@@ -31,7 +31,7 @@ export const ProductMappingTableRow = ({
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: To set focused index
   useEffect(() => {
-    setFocusedIndex(0)
+    setFocusedIndex(-1)
   }, [searchQuery])
 
   useEffect(() => {
@@ -52,10 +52,10 @@ export const ProductMappingTableRow = ({
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'ArrowDown') {
       e.preventDefault()
-      setFocusedIndex((prev) => Math.min(prev + 1, filteredItems.length - 1))
+      setFocusedIndex((prev) => (prev === -1 ? 0 : Math.min(prev + 1, filteredItems.length - 1)))
     } else if (e.key === 'ArrowUp') {
       e.preventDefault()
-      setFocusedIndex((prev) => Math.max(prev - 1, 0))
+      setFocusedIndex((prev) => (prev === -1 ? filteredItems.length - 1 : Math.max(prev - 1, 0)))
     } else if (e.key === 'Enter') {
       e.preventDefault()
       if (filteredItems[focusedIndex]) {
