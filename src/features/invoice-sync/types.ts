@@ -7,7 +7,7 @@ export const WebhookTokenSchema = z.object({
 export type WebhookToken = z.infer<typeof WebhookTokenSchema>
 
 export const InvoiceCreatedEventSchema = z.object({
-  clientId: z.uuid(),
+  clientId: z.string().optional(),
   companyId: z.uuid(),
   collectionMethod: z.enum(['sendInvoice', 'chargeAutomatically']),
   createdAt: z.iso.datetime(),

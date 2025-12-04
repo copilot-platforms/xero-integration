@@ -417,7 +417,7 @@ class SyncedInvoicesService extends AuthenticatedXeroService {
     )
 
     const xeroContactService = new SyncedContactsService(this.user, this.connection)
-    return await xeroContactService.getSyncedContact(data.clientId)
+    return await xeroContactService.getSyncedContact(data.clientId, data.companyId)
   }
 
   /**
