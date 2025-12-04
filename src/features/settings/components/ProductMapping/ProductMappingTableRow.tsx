@@ -172,7 +172,7 @@ export const ProductMappingTableRow = ({
             <div className="border-card-divider border-t-1 border-b-1 hover:bg-gray-100">
               <button
                 type="button"
-                className="h-full w-full cursor-pointer px-3 py-2 text-left text-gray-600 text-sm"
+                className="h-full w-full cursor-pointer px-3 py-2 text-left text-sm text-text-primary"
                 onClick={excludeItemFromMapping}
               >
                 Exclude from mapping
@@ -191,7 +191,7 @@ export const ProductMappingTableRow = ({
                         index === focusedIndex ? 'bg-gray-100' : ''
                       }`}
                     >
-                      <span className="line-clamp-1 break-all text-gray-600 lg:break-normal">
+                      <span className="line-clamp-1 break-all text-text-primary lg:break-normal">
                         {item.name}
                       </span>
                       <span className="text-body-micro text-gray-500 leading-body-micro">
