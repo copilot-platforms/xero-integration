@@ -2,6 +2,7 @@ import type { ProductMapping } from '@items-sync/types'
 import { useDropdown } from '@settings/hooks/useDropdown'
 import { useSettingsContext } from '@settings/hooks/useSettings'
 import { Icon } from 'copilot-design-system'
+import { useState } from 'react'
 import type { ClientXeroItem } from '@/lib/xero/types'
 
 interface ProductMappingTableRowProps {
@@ -19,6 +20,12 @@ export const ProductMappingTableRow = ({
   const { productMappings, updateSettings, xeroItems, dropdownXeroItems } = useSettingsContext()
 
   const xeroItem = xeroItems.find((i) => i.itemID === item.item?.itemID)
+
+  const [searchQuery, setSearchQuery] = useState('')
+
+  const filteredItems = dropdownXeroItems.filter((item) =>
+    item.name.toLowerCase().includes(searchQuery.toLowerCase()),
+  )
 
   const excludeItemFromMapping = () => {
     const newProductMappings = productMappings.map((m) => {
@@ -113,8 +120,8 @@ export const ProductMappingTableRow = ({
               <input
                 type="text"
                 placeholder="Search"
-                value={''}
-                onChange={() => null}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full text-sm focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500"
               />
             </div>
@@ -131,8 +138,8 @@ export const ProductMappingTableRow = ({
 
             {/* Dropdown options */}
             <div className="max-h-56 overflow-y-auto">
-              {dropdownXeroItems?.length
-                ? Object.values(dropdownXeroItems).map((item) => (
+              {filteredItems?.length
+                ? Object.values(filteredItems).map((item) => (
                     <button
                       type="button"
                       key={item.itemID}
@@ -148,7 +155,9 @@ export const ProductMappingTableRow = ({
                     </button>
                   ))
                 : ''}
-              {false && <div className="px-3 py-2 text-gray-500 text-sm">No items found</div>}
+              {filteredItems.length === 0 && (
+                <div className="px-3 py-2 text-gray-500 text-sm">No items found</div>
+              )}
             </div>
           </div>
         )}
