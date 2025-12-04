@@ -35,6 +35,12 @@ export const ProductMappingTableRow = ({
   }, [searchQuery])
 
   useEffect(() => {
+    if (openDropdownId === null) {
+      setSearchQuery('')
+    }
+  }, [openDropdownId])
+
+  useEffect(() => {
     if (listRef.current && filteredItems.length > 0) {
       const focusedElement = listRef.current.children[focusedIndex] as HTMLElement
       if (focusedElement) {
@@ -148,7 +154,7 @@ export const ProductMappingTableRow = ({
         {item.price.id === openDropdownId && (
           <div
             ref={dropdownRef}
-            className="!shadow-popover-050 absolute top-full right-[-1px] left-[-145px] z-100 mt-[-4px] rounded-sm border border-gray-150 bg-white md:left-[-1px] md:min-w-[320px]"
+            className="items-dropdown absolute top-full right-[-1px] left-[-145px] z-100 mt-[-4px] rounded-sm border border-gray-200 bg-white md:left-[-1px] md:min-w-[320px]"
           >
             <div className="px-3 py-2">
               <input
