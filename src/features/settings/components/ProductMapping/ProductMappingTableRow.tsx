@@ -154,7 +154,7 @@ export const ProductMappingTableRow = ({
         {item.price.id === openDropdownId && (
           <div
             ref={dropdownRef}
-            className="items-dropdown absolute top-full right-[-1px] left-[-145px] z-100 mt-[-4px] rounded-sm border border-gray-200 bg-white md:left-[-1px] md:min-w-[320px]"
+            className="items-dropdown !shadow-[0_6px_20px_0_rgba(0,0,0,0.07)] absolute top-full right-[-1px] left-[-145px] z-100 mt-[-4px] rounded-sm border border-dropdown-border bg-white md:left-[-1px] md:min-w-[320px]"
           >
             <div className="px-3 py-2">
               <input
@@ -194,7 +194,7 @@ export const ProductMappingTableRow = ({
                       <span className="line-clamp-1 break-all text-text-primary lg:break-normal">
                         {item.name}
                       </span>
-                      <span className="text-body-micro text-gray-500 leading-body-micro">
+                      <span className="ps-2 text-body-micro text-gray-500 leading-body-micro">
                         {renderUSD(item.amount)}
                       </span>
                     </button>
