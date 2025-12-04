@@ -12,6 +12,21 @@ import {
 import AuthenticatedXeroService from '@/lib/xero/AuthenticatedXero.service'
 
 export class SyncLogsService extends AuthenticatedXeroService {
+  async getLastSyncedAt(): Promise<Date | null> {
+    const [result] = await this.db
+      .select(getTableFields(syncLogs, ['createdAt']))
+      .from(syncLogs)
+      .where(
+        and(
+          eq(syncLogs.portalId, this.user.portalId),
+          eq(syncLogs.tenantId, this.connection.tenantId),
+        ),
+      )
+      .orderBy(desc(syncLogs.createdAt))
+      .limit(1)
+    return result?.createdAt || null
+  }
+
   async getSyncLogsCsv() {
     const logs = await this.db
       .select()
