@@ -2,7 +2,7 @@ import type { ProductMapping } from '@items-sync/types'
 import { useDropdown } from '@settings/hooks/useDropdown'
 import { useSettingsContext } from '@settings/hooks/useSettings'
 import { Icon } from 'copilot-design-system'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { ClientXeroItem } from '@/lib/xero/types'
 
 interface ProductMappingTableRowProps {
@@ -22,10 +22,44 @@ export const ProductMappingTableRow = ({
   const xeroItem = xeroItems.find((i) => i.itemID === item.item?.itemID)
 
   const [searchQuery, setSearchQuery] = useState('')
+  const [focusedIndex, setFocusedIndex] = useState(0)
+  const listRef = useRef<HTMLDivElement>(null)
 
   const filteredItems = dropdownXeroItems.filter((item) =>
     item.name.toLowerCase().includes(searchQuery.toLowerCase()),
   )
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: To set focused index
+  useEffect(() => {
+    setFocusedIndex(0)
+  }, [searchQuery])
+
+  useEffect(() => {
+    if (listRef.current && filteredItems.length > 0) {
+      const focusedElement = listRef.current.children[focusedIndex] as HTMLElement
+      if (focusedElement) {
+        focusedElement.scrollIntoView({ block: 'nearest' })
+      }
+    }
+  }, [focusedIndex, filteredItems.length])
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      setFocusedIndex((prev) => Math.min(prev + 1, filteredItems.length - 1))
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      setFocusedIndex((prev) => Math.max(prev - 1, 0))
+    } else if (e.key === 'Enter') {
+      e.preventDefault()
+      if (filteredItems[focusedIndex]) {
+        handleSelectMapping(filteredItems[focusedIndex])
+      }
+    } else if (e.key === 'Escape') {
+      e.preventDefault()
+      setOpenDropdownId(null)
+    }
+  }
 
   const excludeItemFromMapping = () => {
     const newProductMappings = productMappings.map((m) => {
@@ -122,6 +156,9 @@ export const ProductMappingTableRow = ({
                 placeholder="Search"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={handleKeyDown}
+                // biome-ignore lint/a11y/noAutofocus: Can't be bothered to change this atm
+                autoFocus
                 className="w-full text-sm focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500"
               />
             </div>
@@ -137,14 +174,16 @@ export const ProductMappingTableRow = ({
             </div>
 
             {/* Dropdown options */}
-            <div className="max-h-56 overflow-y-auto">
+            <div className="max-h-56 overflow-y-auto" ref={listRef}>
               {filteredItems?.length
-                ? Object.values(filteredItems).map((item) => (
+                ? Object.values(filteredItems).map((item, index) => (
                     <button
                       type="button"
                       key={item.itemID}
                       onClick={() => handleSelectMapping(item)}
-                      className="mapping-option-btn flex w-full cursor-pointer items-center justify-between px-3 py-1.5 text-left text-sm transition-colors hover:bg-gray-100"
+                      className={`mapping-option-btn flex w-full cursor-pointer items-center justify-between px-3 py-1.5 text-left text-sm transition-colors hover:bg-gray-100 ${
+                        index === focusedIndex ? 'bg-gray-100' : ''
+                      }`}
                     >
                       <span className="line-clamp-1 break-all text-gray-600 lg:break-normal">
                         {item.name}
