@@ -30,7 +30,7 @@ export default function Accordion({ title, content, extra = null }: AccordionFor
           <Heading size="lg">{title}</Heading>
           {/* Chevron rotates based on open state */}
           <div
-            className={`transform p-1.5 transition-transform duration-150 ease-in-out ${
+            className={`flex transform items-center p-1.5 transition-transform duration-150 ease-in-out ${
               isOpen ? 'rotate-90' : ''
             }`}
           >
