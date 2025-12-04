@@ -18,16 +18,20 @@ const CallbackPage = async ({ searchParams }: CallbackPageProps) => {
   await authService.handleXeroConnectionCallback(sp)
 
   return (
-    <div className="px-2 py-4">
-      <div>Connecting Xero Integration...</div>
-      <Script id="xero-confirmation-close" strategy="afterInteractive">
-        {`
+    <html lang="en">
+      <body>
+        <div className="px-2 py-4">
+          <div>Connecting Xero Integration...</div>
+          <Script id="xero-confirmation-close" strategy="afterInteractive">
+            {`
           setTimeout(() => {
             window.close();
           }, 1000)
         `}
-      </Script>
-    </div>
+          </Script>
+        </div>
+      </body>
+    </html>
   )
 }
 
