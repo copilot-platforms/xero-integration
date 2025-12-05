@@ -57,6 +57,13 @@
       "when": 1764771011721,
       "tag": "20251203141011_increase-portal-id-length-in-all-tables",
       "breakpoints": false
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1764932145924,
+      "tag": "20251205105545_add-invoice-updated-field-to-failed-syncs",
+      "breakpoints": false
     }
   ]
 }
