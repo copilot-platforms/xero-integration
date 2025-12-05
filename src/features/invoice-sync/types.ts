@@ -79,6 +79,7 @@ export type PaymentSucceededEvent = z.infer<typeof PaymentSucceededEventSchema>
 
 export enum ValidWebhookEvent {
   InvoiceCreated = 'invoice.created',
+  InvoiceUpdated = 'invoice.updated',
   InvoicePaid = 'invoice.paid',
   InvoiceVoided = 'invoice.voided',
   InvoiceDeleted = 'invoice.deleted',
@@ -92,6 +93,12 @@ export const InvoiceCreatedWebhookSchema = z.object({
   data: InvoiceCreatedEventSchema,
 })
 export type InvoiceCreatedWebhook = z.infer<typeof InvoiceCreatedWebhookSchema>
+
+export const InvoiceUpdatedWebhookSchema = z.object({
+  eventType: z.literal(ValidWebhookEvent.InvoiceUpdated),
+  data: InvoiceCreatedEventSchema,
+})
+export type InvoiceUpdatedWebhook = z.infer<typeof InvoiceUpdatedWebhookSchema>
 
 export const InvoicePaidWebhookSchema = z.object({
   eventType: z.literal(ValidWebhookEvent.InvoicePaid),
@@ -130,6 +137,7 @@ export const PaymentSucceededWebhookSchema = z.object({
 
 export const WebhookEventSchema = z.discriminatedUnion('eventType', [
   InvoiceCreatedWebhookSchema,
+  InvoiceUpdatedWebhookSchema,
   InvoicePaidWebhookSchema,
   InvoiceVoidedWebhookSchema,
   InvoiceDeletedWebhookSchema,
