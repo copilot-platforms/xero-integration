@@ -507,10 +507,11 @@ class SyncedInvoicesService extends AuthenticatedXeroService {
     return priceIdToXeroItem
   }
 
-  private async getOrCreateInvoiceRecord(
+  async getOrCreateInvoiceRecord(
     copilotInvoiceId: string,
     syncedInvoice?: Invoice,
     status?: SyncedInvoiceCreatePayload['status'], // allow db to default to 'pending'
+    ignoreCreate?: boolean,
   ) {
     logger.info(
       'SyncedInvoicesService#getOrCreateInvoiceRecord :: Getting or creating new invoice for',
@@ -541,6 +542,14 @@ class SyncedInvoicesService extends AuthenticatedXeroService {
         prevInvoice,
       )
       return prevInvoice
+    }
+
+    if (ignoreCreate) {
+      logger.info(
+        'SyncedInvoicesService#getOrCreateInvoiceRecord :: Ignoring creation of new invoice.',
+        copilotInvoiceId,
+      )
+      return prevInvoice // This is intentionally `never`
     }
 
     const [invoice] = await this.db

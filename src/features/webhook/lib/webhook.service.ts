@@ -36,6 +36,7 @@ class WebhookService extends AuthenticatedXeroService {
     const eventHandlerMap: Record<WebhookEvent['eventType'], (data: unknown) => Promise<unknown>> =
       {
         [ValidWebhookEvent.InvoiceCreated]: this.handleInvoiceCreated,
+        [ValidWebhookEvent.InvoiceUpdated]: this.handleInvoiceUpdated,
         [ValidWebhookEvent.InvoicePaid]: this.handleInvoicePaid,
         [ValidWebhookEvent.InvoiceVoided]: this.handleInvoiceVoided,
         [ValidWebhookEvent.InvoiceDeleted]: this.handleInvoiceDeleted,
@@ -87,6 +88,24 @@ class WebhookService extends AuthenticatedXeroService {
       return
     }
     return await xeroInvoiceSyncService.syncInvoiceToXero(data)
+  }
+
+  private handleInvoiceUpdated = async (eventData: unknown) => {
+    await sleep(7000) // Gharelu upachar for race condition
+    logger.info('WebhookService#handleInvoiceUpdated :: Handling invoice updated')
+
+    const data = InvoiceCreatedEventSchema.parse(eventData)
+    const invoiceSyncService = new XeroInvoiceSyncService(this.user, this.connection)
+    const pastInvoice = await invoiceSyncService.getOrCreateInvoiceRecord(
+      data.id,
+      undefined,
+      undefined,
+      true,
+    )
+    if (pastInvoice) {
+      return null
+    }
+    return await invoiceSyncService.syncInvoiceToXero(data)
   }
 
   private handleInvoicePaid = async (eventData: unknown) => {
@@ -156,7 +175,7 @@ class WebhookService extends AuthenticatedXeroService {
   }
 
   private handlePaymentSucceeded = async (eventData: unknown) => {
-    await sleep(5000) // Gharelu upachar for race condition when deadline is near
+    await sleep(4000) // Gharelu upachar for race condition when deadline is near
 
     logger.info(
       'WebhookService#handlePaymentSucceeded :: Handling payment succeeded for',
