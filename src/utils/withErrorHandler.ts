@@ -3,6 +3,8 @@ import { type NextRequest, NextResponse } from 'next/server'
 import z, { ZodError } from 'zod'
 import APIError from '@/errors/APIError'
 import type { StatusableError } from '@/errors/BaseServerError'
+import CopilotInvalidTokenError from '@/lib/copilot/errors/CopilotInvalidTokenError'
+import CopilotNoTokenError from '@/lib/copilot/errors/CopilotNoTokenError'
 import logger from '@/lib/logger'
 
 type RequestHandler = (req: NextRequest, params: unknown) => Promise<NextResponse>
@@ -39,6 +41,12 @@ export const withErrorHandler = (handler: RequestHandler): RequestHandler => {
         status = httpStatus.UNPROCESSABLE_ENTITY
         message = z.prettifyError(error)
         logger.error('ZodError: ', z.prettifyError(error), '\n', error)
+      } else if (error instanceof CopilotNoTokenError) {
+        logger.warn('Found no token:', error)
+        return NextResponse.json({ error: error.message }, { status: httpStatus.UNAUTHORIZED })
+      } else if (error instanceof CopilotInvalidTokenError) {
+        logger.warn('Found invalid token:', error)
+        return NextResponse.json({ error: error.message }, { status: httpStatus.UNAUTHORIZED })
       } else if (error instanceof APIError) {
         status = error.status
         message = error.message || message
