@@ -14,6 +14,9 @@ const ServerEnvSchema = z.object({
   // Flags
   FLAG_DISABLE_NOTIFICATION_EMAILS: z.coerce.boolean().default(false),
   FLAG_ENABLE_DELETE_SYNC: z.coerce.boolean().default(false),
+
+  // CRON
+  CRON_SECRET: z.string().optional(),
 })
 
 const env = ServerEnvSchema.parse(process.env)
