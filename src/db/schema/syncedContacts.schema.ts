@@ -29,8 +29,9 @@ export const syncedContacts = pgTable(
   },
   (t) => [
     // Each client within a portal must have ONLY ONE mapping to a contact
-    uniqueIndex('uq_synced_contacts_portal_id_client_or_company_id').on(
+    uniqueIndex('uq_synced_contacts_portal_id_tenant_id_client_or_company_id').on(
       t.portalId,
+      t.tenantId,
       t.clientOrCompanyId,
     ),
   ],

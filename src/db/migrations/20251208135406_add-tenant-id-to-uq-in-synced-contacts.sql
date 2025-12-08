@@ -1,0 +1,2 @@
+DROP INDEX "uq_synced_contacts_portal_id_client_or_company_id";
+CREATE UNIQUE INDEX "uq_synced_contacts_portal_id_tenant_id_client_or_company_id" ON "synced_contacts" USING btree ("portal_id","tenant_id","client_or_company_id");
