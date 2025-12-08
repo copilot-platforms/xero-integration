@@ -1,4 +1,4 @@
-import { getSyncLogsCsv } from '@/features/sync-logs/api/syncLogs.controller'
+import { getSyncLogsCsv } from '@sync-logs/api/syncLogs.controller'
 import { withErrorHandler } from '@/utils/withErrorHandler'
 
 export const maxDuration = 300
