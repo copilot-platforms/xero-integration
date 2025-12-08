@@ -16,6 +16,7 @@
     "ex": "tsx --tsconfig tsconfig.tsx.json --require dotenv/config --require tsconfig-paths/register"
   },
   "dependencies": {
+    "@sentry/nextjs": "^10.29.0",
     "@types/deep-equal": "^1.0.4",
     "@types/html-to-text": "^9.0.4",
     "bottleneck": "^2.19.5",
