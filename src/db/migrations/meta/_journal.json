@@ -64,6 +64,13 @@
       "when": 1764932145924,
       "tag": "20251205105545_add-invoice-updated-field-to-failed-syncs",
       "breakpoints": false
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1765202046215,
+      "tag": "20251208135406_add-tenant-id-to-uq-in-synced-contacts",
+      "breakpoints": false
     }
   ]
 }
