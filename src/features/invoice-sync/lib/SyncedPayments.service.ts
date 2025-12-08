@@ -1,6 +1,7 @@
 import SyncedAccountsService from '@invoice-sync/lib/SyncedAccounts.service'
 import SyncedInvoicesService from '@invoice-sync/lib/SyncedInvoices.service'
 import type { PaymentSucceededEvent } from '@invoice-sync/types'
+import { SyncLogsService } from '@sync-logs/lib/SyncLogs.service'
 import dayjs from 'dayjs'
 import { and, eq } from 'drizzle-orm'
 import status from 'http-status'
@@ -13,7 +14,6 @@ import {
 } from '@/db/schema/syncedPayments.schema'
 import { SyncEntityType, SyncEventType, SyncStatus } from '@/db/schema/syncLogs.schema'
 import APIError from '@/errors/APIError'
-import { SyncLogsService } from '@/features/sync-logs/lib/SyncLogs.service'
 import logger from '@/lib/logger'
 import AuthenticatedXeroService from '@/lib/xero/AuthenticatedXero.service'
 
