@@ -184,7 +184,7 @@ class WebhookService extends AuthenticatedXeroService {
 
     const data = PaymentSucceededEventSchema.parse(eventData)
     const settingsService = new SettingsService(this.user, this.connection)
-    const { addAbsorbedFees } = await settingsService.getSettings()
+    const { addAbsorbedFees } = await settingsService.getOrCreateSettings()
     if (!addAbsorbedFees) {
       logger.info(
         'WebhookService#handlePaymentSucceeded :: addAbsorbedFees is disabled, skipping fee addition',
@@ -200,7 +200,7 @@ class WebhookService extends AuthenticatedXeroService {
 
   private checkAutomaticProductSyncEnabled = async (): Promise<boolean> => {
     const settingsService = new SettingsService(this.user, this.connection)
-    const settings = await settingsService.getSettings()
+    const settings = await settingsService.getOrCreateSettings()
     logger.info(
       'WebhookService#checkAutomaticProductSyncEnabled :: Sync Products Automatically is set to',
       settings.syncProductsAutomatically,
