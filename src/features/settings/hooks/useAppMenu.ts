@@ -33,7 +33,7 @@ export const useAppBridge = ({ token }: { token: string }) => {
   const [disconnectAppAction, setDisconnectAppAction] = useState(() => _disconnectAppAction)
   const [downloadCsvAction, setDownloadCsvAction] = useState(() => _downloadCsvAction)
 
-  setInterval(() => {
+  setTimeout(() => {
     setDisconnectAppAction(() => _disconnectAppAction)
     setDownloadCsvAction(() => _downloadCsvAction)
   }, 1000)
@@ -42,26 +42,28 @@ export const useAppBridge = ({ token }: { token: string }) => {
     { label: string; icon?: Icons; onClick: () => Promise<void> }[]
   >([])
 
-  if (connectionStatus) {
-    setActions([
-      {
-        label: 'Download sync history',
-        icon: Icons.DOWNLOAD,
-        onClick: downloadCsvAction,
-      },
-    ])
-
-    if (isSyncEnabled) {
-      setActions((prev) => [
-        ...prev,
+  setTimeout(() => {
+    if (connectionStatus) {
+      setActions([
         {
-          label: 'Disconnect account',
-          icon: Icons.DISCONNECT,
-          onClick: disconnectAppAction,
+          label: 'Download sync history',
+          icon: Icons.DOWNLOAD,
+          onClick: downloadCsvAction,
         },
       ])
+
+      if (isSyncEnabled) {
+        setActions((prev) => [
+          ...prev,
+          {
+            label: 'Disconnect account',
+            icon: Icons.DISCONNECT,
+            onClick: disconnectAppAction,
+          },
+        ])
+      }
     }
-  }
+  }, 1000)
 
   useActionsMenu(actions)
 }
