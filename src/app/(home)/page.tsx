@@ -27,7 +27,7 @@ const getSettings = async (user: User, connection: XeroConnection) => {
   if (connection.tenantId) {
     // Using tenantID even though tokenSet might be expired because the sync-settings feature don't need to perform Xero API calls
     const settingsService = new SettingsService(user, connection as XeroConnectionWithTokenSet)
-    settings = await settingsService.getSettings()
+    settings = await settingsService.getOrCreateSettings()
   } else {
     settings = defaultSettings
   }

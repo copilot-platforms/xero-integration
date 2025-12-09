@@ -25,7 +25,7 @@ class SyncedContactsService extends AuthenticatedXeroService {
     logger.info('SyncedContactsService#getSyncedContact :: Getting synced contact for', clientId)
 
     const settingsService = new SettingsService(this.user, this.connection)
-    const { useCompanyName } = await settingsService.getSettings()
+    const { useCompanyName } = await settingsService.getOrCreateSettings()
 
     const client = clientId ? await this.copilot.getClient(clientId) : undefined
 

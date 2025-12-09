@@ -14,7 +14,7 @@ export const handleCopilotWebhook = async (req: NextRequest) => {
   const connection = await authService.authorizeXeroForCopilotWorkspace()
 
   const settingsService = new SettingsService(user, connection)
-  const settings = await settingsService.getSettings()
+  const settings = await settingsService.getOrCreateSettings()
   if (!settings.isSyncEnabled) {
     logger.info(
       'webhook/api/webhook.controller#handleCopilotWebhook :: Sync is disabled for this workspace. Skipping...',
