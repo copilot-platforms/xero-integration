@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { postMessage } from '@/lib/copilot/hooks/app-bridge'
+import { handlePostMessage } from '@/lib/copilot/hooks/app-bridge'
 import type {
   Clickable,
   Configurable,
@@ -18,7 +18,7 @@ export const usePrimaryCta = (primaryCta: Clickable | null, config?: Configurabl
           type: 'header.primaryCta',
         }
 
-    postMessage(payload)
+    handlePostMessage(payload)
     if (config?.portalUrl) {
       window.parent.postMessage(payload, ensureHttps(config.portalUrl))
     }
@@ -42,7 +42,7 @@ export const usePrimaryCta = (primaryCta: Clickable | null, config?: Configurabl
 
   useEffect(() => {
     const handleUnload = () => {
-      postMessage({ type: 'header.primaryCta' })
+      handlePostMessage({ type: 'header.primaryCta' })
       if (config?.portalUrl) {
         window.parent.postMessage({ type: 'header.primaryCta' }, ensureHttps(config.portalUrl))
       }

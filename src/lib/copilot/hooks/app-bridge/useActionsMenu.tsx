@@ -1,7 +1,5 @@
-'use client'
-
 import { useEffect, useMemo } from 'react'
-import { postMessage } from '@/lib/copilot/hooks/app-bridge'
+import { handlePostMessage } from '@/lib/copilot/hooks/app-bridge'
 import type {
   ActionsMenuPayload,
   Clickable,
@@ -30,8 +28,7 @@ export const useActionsMenu = (actions: Clickable[], config?: Configurable) => {
       })),
     }
 
-    postMessage(payload)
-
+    handlePostMessage(payload)
     if (config?.portalUrl) {
       window.parent.postMessage(payload, ensureHttps(config.portalUrl))
     }
@@ -55,7 +52,7 @@ export const useActionsMenu = (actions: Clickable[], config?: Configurable) => {
 
   useEffect(() => {
     const handleUnload = () => {
-      postMessage({ type: 'header.actionsMenu', items: [] })
+      handlePostMessage({ type: 'header.actionsMenu', items: [] })
     }
     addEventListener('beforeunload', handleUnload)
     return () => {

@@ -38,22 +38,28 @@ export const useAppBridge = ({ token }: { token: string }) => {
     setDownloadCsvAction(() => _downloadCsvAction)
   }, 1000)
 
-  let actions: { label: string; icon?: Icons; onClick: () => Promise<void> }[] = []
+  const [actions, setActions] = useState<
+    { label: string; icon?: Icons; onClick: () => Promise<void> }[]
+  >([])
+
   if (connectionStatus) {
-    actions = [
+    setActions([
       {
         label: 'Download sync history',
         icon: Icons.DOWNLOAD,
         onClick: downloadCsvAction,
       },
-    ]
+    ])
 
     if (isSyncEnabled) {
-      actions.push({
-        label: 'Disconnect account',
-        icon: Icons.DISCONNECT,
-        onClick: disconnectAppAction,
-      })
+      setActions((prev) => [
+        ...prev,
+        {
+          label: 'Disconnect account',
+          icon: Icons.DISCONNECT,
+          onClick: disconnectAppAction,
+        },
+      ])
     }
   }
 

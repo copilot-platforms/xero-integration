@@ -9,7 +9,7 @@ export * from './useSecondaryCta'
  * The valid dashboard domain will succeed while the others will fail
  * @param payload
  */
-export const postMessage = (payload: object) => {
+export const handlePostMessage = (payload: object) => {
   for (const domain of DASHBOARD_DOMAINS) {
     window.parent.postMessage(payload, domain)
   }
