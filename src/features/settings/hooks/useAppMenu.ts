@@ -33,7 +33,7 @@ export const useAppBridge = ({ token }: { token: string }) => {
   const [disconnectAppAction, setDisconnectAppAction] = useState(() => _disconnectAppAction)
   const [downloadCsvAction, setDownloadCsvAction] = useState(() => _downloadCsvAction)
 
-  setTimeout(() => {
+  setInterval(() => {
     setDisconnectAppAction(() => _disconnectAppAction)
     setDownloadCsvAction(() => _downloadCsvAction)
   }, 1000)
