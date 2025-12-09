@@ -11,7 +11,7 @@ export const useAppBridge = ({ token }: { token: string }) => {
   const { connectionStatus } = useAuthContext()
   const { isSyncEnabled, updateSettings, initialSettings } = useSettingsContext()
 
-  const disconnectAppAction = async () => {
+  const _disconnectAppAction = async () => {
     await disconnectApp(token)
     updateSettings({
       isSyncEnabled: false,
@@ -32,10 +32,12 @@ export const useAppBridge = ({ token }: { token: string }) => {
 
   // Quickfix for now (it will probably stay like this for the end of time)
   const [downloadCsvAction, setDownloadCsvAction] = useState(() => _downloadCsvAction)
+  const [disconnectAppAction, setDisconnectAppAction] = useState(() => _disconnectAppAction)
 
   setTimeout(() => {
     setDownloadCsvAction(() => _downloadCsvAction)
-  }, 1000)
+    setDisconnectAppAction(() => _disconnectAppAction)
+  }, 0)
 
   let actions: { label: string; icon?: Icons; onClick: () => Promise<void> }[] = []
   if (connectionStatus) {
