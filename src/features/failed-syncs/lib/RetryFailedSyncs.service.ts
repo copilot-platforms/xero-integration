@@ -17,7 +17,6 @@ class RetryFailedSyncsService {
       .where(lte(failedSyncs.attempts, MAX_RETRY_ATTEMPTS))
 
     const tokenMap: Record<string, string> = {}
-
     for (const failedSync of failedSyncRecords) {
       try {
         logger.info('Retrying failed sync', failedSync.id)
