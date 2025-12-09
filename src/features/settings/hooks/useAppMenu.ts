@@ -3,7 +3,7 @@
 import { useAuthContext } from '@auth/hooks/useAuth'
 import { disconnectApp } from '@settings/actions/disconnectApp'
 import { useSettingsContext } from '@settings/hooks/useSettings'
-import { useCallback } from 'react'
+import { useEffect, useEffectEvent, useState } from 'react'
 import { useActionsMenu } from '@/lib/copilot/hooks/app-bridge'
 import { Icons } from '@/lib/copilot/hooks/app-bridge/types'
 
@@ -11,16 +11,16 @@ export const useAppBridge = ({ token }: { token: string }) => {
   const { connectionStatus } = useAuthContext()
   const { isSyncEnabled, updateSettings, initialSettings } = useSettingsContext()
 
-  const disconnectAppAction = useCallback(async () => {
+  const _disconnectAppAction = useEffectEvent(async () => {
     await disconnectApp(token)
     updateSettings({
       isSyncEnabled: false,
       initialSettings: { ...initialSettings, isSyncEnabled: false },
     })
-  }, [token, updateSettings, initialSettings])
+  })
 
   // biome-ignore lint/suspicious/useAwait: there is no async action being done here but the type signature requires it
-  const downloadCsvAction = useCallback(async () => {
+  const _downloadCsvAction = useEffectEvent(async () => {
     const url = `/api/sync-logs?token=${token}`
     const link = document.createElement('a')
     link.href = url
@@ -28,7 +28,18 @@ export const useAppBridge = ({ token }: { token: string }) => {
     document.body.appendChild(link)
     link.click()
     link.remove()
-  }, [token])
+  })
+
+  const [disconnectAppAction, setDisconnectAppAction] = useState(() => _disconnectAppAction)
+  const [downloadCsvAction, setDownloadCsvAction] = useState(() => _downloadCsvAction)
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: using useEffectEvent here
+  useEffect(() => {
+    setTimeout(() => {
+      setDisconnectAppAction(() => _disconnectAppAction)
+      setDownloadCsvAction(() => _downloadCsvAction)
+    }, 0)
+  }, [])
 
   let actions: { label: string; icon?: Icons; onClick: () => Promise<void> }[] = []
   if (connectionStatus) {
