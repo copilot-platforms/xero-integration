@@ -1,4 +1,5 @@
 import AuthService from '@auth/lib/Auth.service'
+import { MAX_RETRY_ATTEMPTS } from '@failed-syncs/lib/constants'
 import WebhookService from '@webhook/lib/webhook.service'
 import { eq, lte } from 'drizzle-orm'
 import env from '@/config/server.env'
@@ -13,7 +14,7 @@ class RetryFailedSyncsService {
     const failedSyncRecords = await db
       .select()
       .from(failedSyncs)
-      .where(lte(failedSyncs.attempts, 3))
+      .where(lte(failedSyncs.attempts, MAX_RETRY_ATTEMPTS))
 
     const tokenMap: Record<string, string> = {}
 
