@@ -36,7 +36,7 @@ export const useAppBridge = ({ token }: { token: string }) => {
   setTimeout(() => {
     setDisconnectAppAction(() => _disconnectAppAction)
     setDownloadCsvAction(() => _downloadCsvAction)
-  }, 0)
+  }, 1000)
 
   let actions: { label: string; icon?: Icons; onClick: () => Promise<void> }[] = []
   if (connectionStatus) {
