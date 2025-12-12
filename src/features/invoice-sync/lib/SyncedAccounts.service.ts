@@ -12,7 +12,7 @@ class SyncedAccountsService extends AuthenticatedXeroService {
       'SyncedAccountsService#getOrCreateCopilotSalesAccount :: Getting copilot sales account',
     )
 
-    const accounts = await this.xero.getAccounts(this.connection.tenantId, 'REVENUE')
+    const accounts = await this.xero.getAccounts(this.connection.tenantId)
     let salesAccount = accounts.find((acc) => acc.code === AccountCode.SALES)
 
     // CASE I: Sales account exists
@@ -54,7 +54,7 @@ class SyncedAccountsService extends AuthenticatedXeroService {
       'SyncedAccountsService#getOrCreateCopilotExpenseAccount :: Getting copilot expense account',
     )
 
-    const accounts = await this.xero.getAccounts(this.connection.tenantId, 'EXPENSE')
+    const accounts = await this.xero.getAccounts(this.connection.tenantId)
     let expenseAccount = accounts.find((acc) => acc.code === AccountCode.MERCHANT_FEES)
 
     // CASE I: Expense account exists
