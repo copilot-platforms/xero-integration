@@ -282,7 +282,7 @@ class XeroAPI {
     const { body } = await this.xero.accountingApi.createAccount(tenantId, {
       name: SALES_ACCOUNT_NAME,
       code: AccountCode.SALES,
-      type: AccountType.REVENUE,
+      type: AccountType.SALES,
       description: 'Revenue from selling goods or products.',
       enablePaymentsToAccount: true,
     })
