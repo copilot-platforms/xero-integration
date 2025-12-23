@@ -145,8 +145,10 @@ export class CopilotAPI {
   async _getProducts(
     productIds: string[] | 'all',
     args: CopilotListArgs = { limit: MAX_FETCH_COPILOT_RESOURCES },
-  ): Promise<Record<string, CopilotProduct>> {
+  ): Promise<Record<string, CopilotProduct> | null> {
     const allProductsResponse = await this.copilot.listProducts(args)
+
+    if (!allProductsResponse.data) return null
     const allProducts = z.array(CopilotProductSchema).parse(allProductsResponse.data)
 
     return allProducts.reduce<Record<string, CopilotProduct>>((acc, product) => {
@@ -164,8 +166,10 @@ export class CopilotAPI {
   async _getPrices(
     priceIds: string[] | 'all',
     args = { limit: '10_000' },
-  ): Promise<Record<string, CopilotPrice>> {
+  ): Promise<Record<string, CopilotPrice> | null> {
     const allPricesResponse = await this.copilot.listPrices(args)
+
+    if (!allPricesResponse.data) return null
     const allPrices = z.array(CopilotPriceSchema).parse(allPricesResponse.data)
 
     return allPrices.reduce<Record<string, CopilotPrice>>((acc, price) => {

@@ -41,6 +41,8 @@ class ProductMappingsService extends AuthenticatedXeroService {
       this.copilot.getPricesMapById('all'),
     ])
 
+    if (!copilotPrices || !copilotProducts) return []
+
     const mappings = Object.values(copilotPrices)
       // Sort by decreasing createdAt date
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
