@@ -300,9 +300,9 @@ class SyncedItemsService extends AuthenticatedXeroService {
         copilotPriceMapPromise,
         xeroItemMapPromise,
       ])
-      const copilotProduct = copilotProductMap ? copilotProductMap[productId] : null
-      const copilotPrice = copilotPriceMap ? copilotPriceMap[priceId] : null
-      const xeroItem = xeroItemMap ? xeroItemMap[itemId] : null
+      const copilotProduct = copilotProductMap?.[productId] || null
+      const copilotPrice = copilotPriceMap?.[priceId] || null
+      const xeroItem = xeroItemMap?.[itemId] || null
       return { copilotProduct, copilotPrice, xeroItem }
     } catch (_) {
       return { copilotProduct: null, copilotPrice: null, xeroItem: null }
