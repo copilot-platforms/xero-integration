@@ -152,7 +152,7 @@ class SyncedItemsService extends AuthenticatedXeroService {
 
     for (const price of prices) {
       const productMap = await this.copilot.getProductsMapById([price.productId])
-      const product = productMap?.[price.productId]
+      const product = productMap[price.productId]
       if (!product) {
         throw new APIError('Could not find product for mapping', status.BAD_REQUEST)
       }
@@ -300,9 +300,9 @@ class SyncedItemsService extends AuthenticatedXeroService {
         copilotPriceMapPromise,
         xeroItemMapPromise,
       ])
-      const copilotProduct = copilotProductMap?.[productId] || null
-      const copilotPrice = copilotPriceMap?.[priceId] || null
-      const xeroItem = xeroItemMap?.[itemId] || null
+      const copilotProduct = copilotProductMap[productId]
+      const copilotPrice = copilotPriceMap[priceId]
+      const xeroItem = xeroItemMap[itemId]
       return { copilotProduct, copilotPrice, xeroItem }
     } catch (_) {
       return { copilotProduct: null, copilotPrice: null, xeroItem: null }
