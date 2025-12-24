@@ -9,7 +9,7 @@
 
 import Bottleneck from 'bottleneck'
 
-// Max peak rate is 3 * (1000 / 200) = 15 requests per second.
+// Max peak rate is 3 * (1000 / 300) = 10 requests per second.
 const maxConcurrent = 3
-const minTime = 200
+const minTime = 300
 export const copilotBottleneck = new Bottleneck({ maxConcurrent, minTime })
